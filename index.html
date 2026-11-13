@@ -39,12 +39,14 @@ html{-webkit-text-size-adjust:100%}
 #nickSet{margin:6px 0 0}
 .nb #nickQ{color:#24292f;font-size:16px;font-weight:600;margin:10px 0 14px;white-space:pre-line}.nbBtns #nickYes{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
 #toast{position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:70;max-width:calc(100vw - 32px);background:#24292f;color:#fff;border-radius:999px;padding:10px 20px;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.3);white-space:nowrap}
-#nickBox{position:fixed;inset:0;z-index:60;background:rgba(20,22,30,.66);display:grid;place-items:center;padding:16px}
+#nickBox,#noteBox{position:fixed;inset:0;z-index:60;background:rgba(20,22,30,.66);display:grid;place-items:center;padding:16px}
 .nb{width:min(340px,100%);box-sizing:border-box;background:#fff;color:#24292f;border-radius:14px;padding:16px;font-size:15px;line-height:1.55}
 .nb b{font-size:18px}.nb p{margin:6px 0 10px;font-size:14px;color:#57606a}.nb #nickMsg{min-height:21px;margin:8px 0;color:#b42318;font-weight:600}
 .nb input{width:100%;box-sizing:border-box;font-size:18px;padding:10px 12px;border:2px solid #b6bec7;border-radius:10px}
 .nbBtns{display:flex;gap:8px}.nbBtns button{margin:0;flex:1;height:46px;border-radius:10px;border:1px solid #b6bec7;background:#fff;color:#24292f;font-size:15px}
-.nbBtns #nickOk{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
+.nbBtns #nickOk,.nbBtns #noteOk{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
+.nb textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 12px;border:2px solid #b6bec7;border-radius:10px;resize:vertical}
+.nb #noteMsg{min-height:21px;margin:8px 0;color:#b42318;font-weight:600}
 #favs{margin-bottom:12px}#favsList{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}#favsList canvas{width:56px;height:56px;cursor:pointer;border-radius:6px}
 /* 난이도 버튼. 폰에서는 목표 그림 칸을 빼고 이 버튼이 그 자리에 온다 (목표는 판 위의 색칠로 보인다) */
 #levels{margin-bottom:10px}#levels div{display:flex;gap:8px;margin-top:6px}
@@ -76,7 +78,8 @@ html{-webkit-text-size-adjust:100%}
 #favLv{position:absolute;top:7px;left:157px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700}
 @media (max-width:719px){#favLv{top:4px;left:124px;height:36px;min-width:36px;padding:0 9px;font-size:16px}#fav{top:4px;left:84px;width:36px;height:36px}#fav svg,#rankBtn svg{width:22px;height:22px}#rankBtn{top:4px;left:44px;width:36px;height:36px}#rankBox{top:44px;left:4px}#favBox{top:44px;left:4px}}
 @media (max-width:719px){#bar{top:4px;right:4px}#optBtn{top:4px;left:4px}#bar button,#optBtn{width:36px;height:36px}#bar svg,#optBtn svg{width:22px;height:22px}}
-#pick{margin-top:8px}
+#pick{margin:0}#tools{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+#pick #tintBtn{all:revert;font-size:14px;padding:6px 10px;margin:2px;cursor:pointer} /* 옆의 버튼 설명과 같은 모양 */
 #pick,#acts,#picker{display:flex;align-items:center;gap:8px}
 #pick button.txt{width:auto;padding:0 14px;font-size:15px;font-weight:600}
 #tName{min-width:64px;text-align:center;font-size:15px;font-weight:600}
@@ -89,6 +92,13 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
 <div id="game">
   <div id="guide" hidden></div>
   <div id="toast" hidden></div>
+  <div id="noteBox" hidden><div class="nb">
+    <b>개발자에게 코멘트 남기기</b>
+    <p>좋았던 점, 불편했던 점, 버그, 아이디어 무엇이든 적어 주세요.</p>
+    <textarea id="noteIn" maxlength="500" rows="5" placeholder="500자까지"></textarea>
+    <p id="noteMsg"></p>
+    <div class="nbBtns"><button id="noteOk">보내기</button><button id="noteNo">닫기</button></div>
+  </div></div>
   <div id="nickBox" hidden><div class="nb">
     <b>닉네임</b>
     <p>닉네임을 정하면 순위표에 오릅니다. 전에 쓰던 닉네임을 적으면 기록을 이어서 합니다.</p>
@@ -127,14 +137,24 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <canvas id="t"></canvas></div>
   <div id="msg"></div>
   <button id="next" hidden>다음으로 넘어가기</button>
-  <button id="guideBtn">버튼 설명</button><br>
+  <div id="tools"><button id="guideBtn">버튼 설명</button>
+  <div id="pick">
+    <button id="tintBtn" class="txt">색 바꾸기</button>
+    <div id="picker" hidden>
+      <button id="tPrev" aria-label="이전 색"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <span id="tName"></span>
+      <button id="tNext" aria-label="다음 색"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      <button id="tOk" class="txt">확인</button>
+    </div>
+  </div>
+  </div>
   <button id="new">새 문제</button><button id="sol">정답 보기</button><button id="tutAgain">튜토리얼</button>
   <fieldset id="opts"><legend>문제 설정 (바꾸면 새 문제)</legend>
     블럭 종류 <select id="kind"><option value="4" selected>4칸<option value="4x">4칸, 같은 블럭은 떨어뜨리기<option value="5">5칸<option value="45">4칸 + 5칸 혼합<option value="all">1~6칸 혼합 (하나씩)</select><br>
     판 크기 <select id="size"></select><br>
     블럭 수 <select id="n"></select>
   </fieldset>
-  <p><button id="toGame">게임으로 돌아가기</button></p>
+  <p><button id="toGame">게임으로 돌아가기</button><button id="noteBtn" hidden>개발자에게 코멘트 남기기</button></p>
   <p>아래 블럭을 끌어서 판 쪽으로 가져가면 가까운 테두리에서 조준됩니다. 놓으면 발사.<br>
   판 위의 블럭을 누르면 빠집니다. PC에서는 우클릭으로도 뺍니다. 다른 블럭이 기대고 있으면 빠지지 않고, 기대고 있는 블럭이 반짝입니다.<br>
   회전: 폰에서는 아래 블럭을 톡 누르기. PC에서는 블럭 우클릭이나 R 키.</p>
@@ -147,15 +167,6 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
     <label><input type="checkbox" id="favOn"> 하트를 난이도 분류용으로 쓰기 (끄면 즐겨찾기)</label><br>
     <label><input type="checkbox" id="ghost" checked> 멈출 자리 미리보기</label><br>
     <label><input type="checkbox" id="over" checked> 목표 윤곽을 판에 겹치기</label>
-    <div id="pick">
-      <button id="tintBtn" class="txt">색 바꾸기</button>
-      <div id="picker" hidden>
-        <button id="tPrev" aria-label="이전 색"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-        <span id="tName"></span>
-        <button id="tNext" aria-label="다음 색"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-        <button id="tOk" class="txt">확인</button>
-      </div>
-    </div>
     <p style="margin:8px 0 0">이 문제의 종합 점수 <b id="devScore">-</b></p>
     <p style="margin:8px 0 0">하트로 저장한 문제 <b id="favCount">0</b>개 <button id="favCopy">목록 복사</button></p>
     <textarea id="favText" rows="3" readonly hidden style="width:100%;box-sizing:border-box;font-size:12px"></textarea>
@@ -855,9 +866,9 @@ try{nick=localStorage.getItem('bs_nick');}catch(e){}
 async function lb(body){const r=await fetch(LB_URL,{method:'POST',body:JSON.stringify(body)});return r.json();}
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function keepStats(rec){try{localStorage.setItem('bs_stats',JSON.stringify({score:rec.score,n:rec.n,p:rec.p,perfect:rec.perfect}));}catch(e){}}
-function rankRow(r,me){return '<div class="rankRow'+(me?' me':'')+'"><i>'+r.rank+'</i><span>'+esc(r.nick)+'</span><b>'+r.score+'점</b><em>PERFECT '+(r.rate===null?'-':r.rate+'%')+'</em></div>';}
+function rankRow(r,me){return '<div class="rankRow'+(me?' me':'')+'"><i>'+r.rank+'</i><span>'+esc(me&&isAnon()?'나':r.nick)+'</span><b>'+r.score+'점</b><em>PERFECT '+(r.rate===null?'-':r.rate+'%')+'</em></div>';}
 function rankHtml(v,rate){
-  const mine='<div class="rankRow me"><i>-</i><span>'+(nick?esc(nick):'나')+'</span><b>'+v.score+'점</b><em>PERFECT '+rate+'</em></div>';
+  const mine='<div class="rankRow me"><i>-</i><span>'+(nick&&!isAnon()?esc(nick):'나')+'</span><b>'+v.score+'점</b><em>PERFECT '+rate+'</em></div>';
   if(!LB_URL)return mine+'<div class="rankSoon">순위표는 준비 중입니다</div>';
   let h;
   if(!lbData)h=(nick?mine:'')+'<div class="rankSoon">'+(lbState||'순위표를 불러오는 중입니다')+'</div>';
@@ -887,6 +898,7 @@ let toastTimer=0;
 function toast(t){const o=$('toast');o.textContent=t;o.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{o.hidden=true;},2800);}
 let nickFound=null; // 서버에 이미 있는 닉네임을 적었을 때 그 기록
 function nickDone(name,back){ // 닉네임이 정해졌다
+  if(isAnon()&&nick!==name)lb({a:'drop',nick}).catch(()=>{}); // anonymous로 하다가 이름을 정하면 예전 줄은 지운다
   nick=name;try{localStorage.setItem('bs_nick',nick);}catch(e){}
   $('nickBox').hidden=true;
   if(back){tutDone();if(puzzle.tut!==undefined)newPuzzle();toast('돌아오신 것을 환영합니다!');} // 돌아온 사람은 튜토리얼을 건너뛴다
@@ -918,8 +930,36 @@ $('nickNew').onclick=async()=>{ // 다른 사람: 뒤에 숫자를 붙인 새 �
   $('nickYes').disabled=$('nickNew').disabled=false;
 };
 $('nickIn').onkeydown=e=>{if(e.key==='Enter')$('nickOk').click();};
-$('nickNo').onclick=()=>{$('nickBox').hidden=true;try{localStorage.setItem('bs_nickAsk','no');}catch(e){}};
+const isAnon=()=>!!nick&&/^anonymous\d{3,4}$/.test(nick);
+async function anonNick(){ // 닉네임 없이 하는 사람: anonymous + 숫자 세 자리. 겹치면 다시 뽑고, 다섯 번 겹치면 네 자리로
+  for(let i=0;i<12;i++){
+    const digits=i<5?3:4,num=String(Math.floor(Math.random()*Math.pow(10,digits))).padStart(digits,'0'),name='anonymous'+num;
+    const r=await lb({a:'get',nick:name});if(!r.ok)throw new Error(r.error);
+    if(!r.rec)return name;
+  }
+  throw new Error('full');
+}
+$('nickNo').onclick=async()=>{
+  $('nickBox').hidden=true;try{localStorage.setItem('bs_nickAsk','no');}catch(e){}
+  if(nick||!LB_URL)return; // 이미 이름(또는 anonymous 이름)이 있으면 그대로
+  try{nick=await anonNick();try{localStorage.setItem('bs_nick',nick);}catch(e){}showStats();lbSync();}
+  catch(e){lbState='순위표에 연결하지 못했습니다';showStats();} // 실패하면 이름 없이 그냥 한다
+};
 $('nickSet').onclick=askNick;
+// 개발자에게 코멘트 남기기: 순위표 서버가 있을 때만 쓸 수 있다
+$('noteBtn').hidden=!LB_URL;
+$('noteBtn').onclick=()=>{$('noteBox').hidden=false;$('noteMsg').textContent='';setTimeout(()=>$('noteIn').focus(),50);};
+$('noteNo').onclick=()=>{$('noteBox').hidden=true;};
+$('noteOk').onclick=async()=>{
+  const text=$('noteIn').value.trim();
+  if(!text){$('noteMsg').textContent='내용을 적어 주세요.';return;}
+  $('noteOk').disabled=true;$('noteMsg').textContent='보내는 중입니다.';
+  try{
+    const r=await lb({a:'note',nick:nick||'',text});if(!r.ok)throw new Error(r.error);
+    $('noteIn').value='';$('noteBox').hidden=true;toast('코멘트를 보냈습니다. 고맙습니다!');
+  }catch(e){$('noteMsg').textContent='보내지 못했습니다. 잠시 뒤에 다시 해 주세요.';}
+  $('noteOk').disabled=false;
+};
 // ---- 기록과 점수: 난이도 버튼으로 받은 문제를 풀면 점수가 쌓인다. 하 2점, 중 3점, 상 5점, PERFECT면 1점 더 ----
 const POINTS=[2,3,5];
 function loadStats(){try{const v=JSON.parse(localStorage.getItem('bs_stats'));if(v&&v.n){if(!v.p)v.p=[0,0,0];return v;}}catch(e){}return {score:0,n:[0,0,0],p:[0,0,0],perfect:0};}
@@ -928,7 +968,7 @@ function showStats(pop){
   const total=v.n[0]+v.n[1]+v.n[2],rate=total?Math.round(v.perfect/total*100)+'%':'-';
   const row=rankHtml(v,rate);
   $('rankList').innerHTML=row;$('rankBox').innerHTML='<b>순위</b>'+row; // 폰의 작은 창에도 같은 모양으로
-  $('nickSet').hidden=!LB_URL||!!nick;
+  $('nickSet').hidden=!LB_URL||(!!nick&&!isAnon()); // 이름이 없거나 anonymous로 하고 있으면 닉네임을 정할 수 있다
 }
 function award(){ // 완성했을 때 한 번 불린다
   if(puzzle.lv===undefined||puzzle.got||solved)return; // 난이도 버튼으로 받은 문제만. 튜토리얼, 직접 설정한 문제, 다시 푸는 즐겨찾기는 점수가 없다
