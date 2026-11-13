@@ -166,7 +166,7 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
     <label><input type="checkbox" id="oh"> 판 밖으로 삐져나오기 허용</label><br>
     <label><input type="checkbox" id="ord" checked> 순서가 중요한 문제만</label><br>
     <label><input type="checkbox" id="autoNext" checked> 완성하면 자동으로 다음 문제</label><br>
-    <label><input type="checkbox" id="favOn"> 하트를 난이도 분류용으로 쓰기 (끄면 즐겨찾기)</label><br>
+    <span id="favOnRow"><label><input type="checkbox" id="favOn"> 하트를 난이도 분류용으로 쓰기 (끄면 즐겨찾기)</label><br></span>
     <label><input type="checkbox" id="ghost" checked> 멈출 자리 미리보기</label><br>
     <label><input type="checkbox" id="over" checked> 목표 윤곽을 판에 겹치기</label>
     <p style="margin:8px 0 0">이 문제의 종합 점수 <b id="devScore">-</b></p>
@@ -1117,7 +1117,7 @@ function drawGuide(){ // 다음에 할 일을 손짓으로 보여 준다: 돌려
   x.restore();
 }
 // 하트는 컴퓨터에서 파일로 열었을 때만 처음부터 켜 둔다 (링크로 받은 사람에게는 꺼져 있다)
-$('favOn').checked=location.protocol==='file:';$('favOn').onchange=refreshFav;
+$('favOnRow').hidden=!!LB_URL;$('favOn').checked=location.protocol==='file:'&&!LB_URL;$('favOn').onchange=refreshFav;
 showStats();drawFavs();
 // 처음 온 사람은 튜토리얼부터. 도구에서 문제를 넘겨받았으면 그 문제부터
 let tutSeen=false;try{tutSeen=!!localStorage.getItem('bs_tut');}catch(e){}
