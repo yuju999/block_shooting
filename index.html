@@ -47,7 +47,9 @@ html{-webkit-text-size-adjust:100%}
 .nbBtns #nickOk,.nbBtns #noteOk{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
 .nb textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 12px;border:2px solid #b6bec7;border-radius:10px;resize:vertical}
 .nb #noteMsg{min-height:21px;margin:8px 0;color:#b42318;font-weight:600}
-#favs{margin-bottom:12px}#favsList{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}#favsList canvas{width:56px;height:56px;cursor:pointer;border-radius:6px}
+#favs{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.favHead{font-weight:700;margin:8px 0 6px}.favHead:first-child{margin-top:0}.favRow{display:flex;flex-wrap:wrap;gap:6px}
+#favsList canvas{width:56px;height:56px;cursor:pointer;border-radius:6px;border:2px solid transparent}#favsList canvas:hover{border-color:var(--fg)}
 /* 난이도 버튼. 폰에서는 목표 그림 칸을 빼고 이 버튼이 그 자리에 온다 (목표는 판 위의 색칠로 보인다) */
 #levels{margin-bottom:10px}#levels div{display:flex;gap:8px;margin-top:6px}
 #levels button{flex:1;margin:0;height:48px;font-size:18px;font-weight:700;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--fg)}
@@ -132,7 +134,6 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
 <div id="side">
   <div id="record"><b>순위</b><div id="rankList"></div><button id="nickSet" hidden>닉네임 정하기</button></div>
   <div id="levels"><b>난이도</b><div><button data-lv="0" aria-pressed="false">하</button><button data-lv="1" aria-pressed="false">중</button><button data-lv="2" aria-pressed="false">상</button></div></div>
-  <div id="favs" hidden><b>즐겨찾기</b> <span id="favsN"></span><div id="favsList"></div></div>
   <div id="goal"><b>목표 그림</b><br>
   <canvas id="t"></canvas></div>
   <div id="msg"></div>
@@ -158,7 +159,8 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <p>아래 블럭을 끌어서 판 쪽으로 가져가면 가까운 테두리에서 조준됩니다. 놓으면 발사.<br>
   판 위의 블럭을 누르면 빠집니다. PC에서는 우클릭으로도 뺍니다. 다른 블럭이 기대고 있으면 빠지지 않고, 기대고 있는 블럭이 반짝입니다.<br>
   회전: 폰에서는 아래 블럭을 톡 누르기. PC에서는 블럭 우클릭이나 R 키.</p>
-  <p><button id="devBtn" aria-expanded="false" aria-controls="dev">개발자 도구</button></p>
+  <p><button id="devBtn" aria-expanded="false" aria-controls="dev">개발자 도구</button><button id="favsBtn" aria-expanded="false" aria-controls="favs">즐겨찾기</button></p>
+  <div id="favs" hidden><div id="favsList"></div></div>
   <fieldset id="dev" hidden>
     고정 칸 (최대) <select id="seeds"></select><br>
     <label><input type="checkbox" id="oh"> 판 밖으로 삐져나오기 허용</label><br>
@@ -713,6 +715,7 @@ $('favCopy').onclick=()=>{
   const t=$('favText');t.value=JSON.stringify(loadSaved());t.hidden=false;t.focus();t.select();
   try{navigator.clipboard.writeText(t.value).catch(()=>{});}catch(e){}
 };
+$('favsBtn').onclick=()=>{const open=$('favs').hidden;$('favs').hidden=!open;$('favsBtn').setAttribute('aria-expanded',open);if(open){drawFavs();$('favs').scrollIntoView({behavior:'smooth',block:'nearest'});}};
 $('toGame').onclick=()=>$('game').scrollIntoView({behavior:'smooth',block:'start'});
 $('undo').onclick=undo;$('reset').onclick=()=>{restart();if(puzzle.tut!==undefined)$('tutText').textContent=TUT[puzzle.tut].text;};$('new').onclick=$('next').onclick=newPuzzle;$('sol').onclick=solve;
 $('size').onchange=()=>{fillPreset(+$('size').value);fillFixed();newPuzzle();}; // 판 크기를 바꾸면 블럭 수도 그 크기의 기본값으로
@@ -845,18 +848,29 @@ addEventListener('hashchange',()=>{const p=linked();if(p)newPuzzle(p);});
 function loadFavs(){try{return JSON.parse(localStorage.getItem('bs_fav'))||[];}catch(e){return [];}}
 function toggleFav(){
   const id=puzzleId(puzzle),list=loadFavs(),had=list.some(v=>v.id===id),next=had?list.filter(v=>v.id!==id)
-    :list.concat({id,at:Date.now(),kind:puzzle.kind,size:puzzle.size,core:puzzle.core,seeds:puzzle.seeds,target:[...puzzle.target],steps:puzzle.steps});
+    :list.concat({id,lv:favLv(),score:puzzle.score,at:Date.now(),kind:puzzle.kind,size:puzzle.size,core:puzzle.core,seeds:puzzle.seeds,target:[...puzzle.target],steps:puzzle.steps});
   try{localStorage.setItem('bs_fav',JSON.stringify(next));}catch(e){$('msg').textContent='저장하지 못했습니다';}
+  // 순위표 서버가 있고 이름이 있으면, 누가 어떤 문제를 즐겨찾기했는지 서버에도 알린다 (관리 화면에서 본다)
+  if(LB_URL&&nick)lb({a:'fav',nick,on:!had,id,lv:favLv(),score:puzzle.score||0,p:{kind:puzzle.kind,size:puzzle.size,seeds:puzzle.seeds,target:[...puzzle.target],steps:puzzle.steps}}).catch(()=>{});
   refreshFav();drawFavs();
 }
-function drawFavs(){
-  const list=loadFavs().sort((a,b)=>b.at-a.at),box=$('favsList');$('favs').hidden=!list.length;$('favsN').textContent=list.length+'개';box.innerHTML='';
-  list.forEach(f=>{
-    const c=document.createElement('canvas'),z=Math.floor(112/f.size);c.width=c.height=z*f.size;c.title='다시 풀기';
-    const k=c.getContext('2d');k.fillStyle=TH.board;k.fillRect(0,0,c.width,c.height);
-    f.target.forEach(q=>{const [cx,cy]=q.split(',').map(Number);k.fillStyle=f.seeds.includes(q)?SEED:'#7a8591';k.fillRect(cx*z+1,cy*z+1,z-2,z-2);});
-    c.onclick=()=>{newPuzzle({...f,target:new Set(f.target),replay:true});$('game').scrollIntoView({behavior:'smooth',block:'start'});}; // 다시 푸는 문제는 점수가 없다
-    box.appendChild(c);
+const scoreLv=sc=>sc===undefined?1:sc<=63?0:sc<=105?1:2; // 종합 점수로 본 난이도. 점수를 모르면 중
+function favLv(){return puzzle.lv!==undefined?puzzle.lv:scoreLv(puzzle.score);}
+function drawFavs(){ // 즐겨찾기 버튼을 누르면 뜨는 목록: 하, 중, 상으로 나누고, 그림을 누르면 다시 푼다
+  const list=loadFavs().sort((a,b)=>b.at-a.at),box=$('favsList');box.innerHTML='';
+  $('favsBtn').textContent='즐겨찾기'+(list.length?' '+list.length:'');
+  if(!list.length){box.innerHTML='<p style="margin:0">하트를 누른 문제가 여기에 모입니다.</p>';return;}
+  ['하','중','상'].forEach((name,k)=>{
+    const part=list.filter(f=>(f.lv!==undefined?f.lv:scoreLv(f.score))===k);if(!part.length)return;
+    const h=document.createElement('div');h.className='favHead';h.textContent=name+' '+part.length+'개';box.appendChild(h);
+    const row=document.createElement('div');row.className='favRow';box.appendChild(row);
+    part.forEach(f=>{
+      const c=document.createElement('canvas'),z=Math.floor(112/f.size);c.width=c.height=z*f.size;c.title='다시 풀기';
+      const k2=c.getContext('2d');k2.fillStyle=TH.board;k2.fillRect(0,0,c.width,c.height);
+      f.target.forEach(q=>{const [cx,cy]=q.split(',').map(Number);k2.fillStyle=f.seeds.includes(q)?SEED:'#7a8591';k2.fillRect(cx*z+1,cy*z+1,z-2,z-2);});
+      c.onclick=()=>{newPuzzle({...f,target:new Set(f.target),replay:true});$('game').scrollIntoView({behavior:'smooth',block:'start'});}; // 다시 푸는 문제는 점수가 없다
+      row.appendChild(c);
+    });
   });
 }
 // ---- 순위표: 점수 서버(LB_URL)가 정해져 있을 때만 켜진다. 비어 있으면 "준비 중"으로 남는다 ----
