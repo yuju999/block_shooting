@@ -37,6 +37,8 @@ html{-webkit-text-size-adjust:100%}
 .rankSoon{font-size:13px;color:var(--muted);padding:2px 0 4px}
 .rankRow.me{background:rgba(250,204,21,.28);border-radius:6px;padding-left:6px;padding-right:6px}
 #nickSet{margin:6px 0 0}
+.rankTop{display:flex;justify-content:space-between;align-items:center}#nickChange{margin:0;font-size:13px;padding:4px 10px}
+.nb #nickWarn{color:#b42318;font-weight:700;font-size:15px}
 .nb #nickQ{color:#24292f;font-size:16px;font-weight:600;margin:10px 0 14px;white-space:pre-line}.nbBtns #nickYes{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
 #toast{position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:70;max-width:calc(100vw - 32px);background:#24292f;color:#fff;border-radius:999px;padding:10px 20px;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.3);white-space:nowrap}
 #nickBox,#noteBox{position:fixed;inset:0;z-index:60;background:rgba(20,22,30,.66);display:grid;place-items:center;padding:16px}
@@ -104,6 +106,7 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <div id="nickBox" hidden><div class="nb">
     <b>닉네임</b>
     <p>닉네임을 정하면 순위표에 오릅니다. 전에 쓰던 닉네임을 적으면 기록을 이어서 합니다.</p>
+    <p id="nickWarn" hidden>닉네임 변경 시, 기존의 점수가 유지되지 않습니다.</p>
     <div id="nickForm">
       <input id="nickIn" maxlength="10" autocomplete="off" placeholder="10자까지" enterkeyhint="done">
       <p id="nickMsg"></p>
@@ -132,7 +135,7 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   </div>
 </div>
 <div id="side">
-  <div id="record"><b>순위</b><div id="rankList"></div><button id="nickSet" hidden>닉네임 정하기</button></div>
+  <div id="record"><div class="rankTop"><b>순위</b><button id="nickChange" hidden>닉네임 변경</button></div><div id="rankList"></div><button id="nickSet" hidden>닉네임 정하기</button></div>
   <div id="levels"><b>난이도</b><div><button data-lv="0" aria-pressed="false">하</button><button data-lv="1" aria-pressed="false">중</button><button data-lv="2" aria-pressed="false">상</button></div></div>
   <div id="goal"><b>목표 그림</b><br>
   <canvas id="t"></canvas></div>
@@ -890,7 +893,16 @@ function drawFavs(){ // 즐겨찾기 버튼을 누르면 뜨는 목록: 하, 중
 const LB_URL="https://script.google.com/macros/s/AKfycbzR-eSXMlONE1rKQKh0dn1CYMg3zN23sshUzI6OlRyVgQEuPqIYw1gLM7C9ELjvGniD/exec"; // tools/build-site.cjs가 leaderboard/url.txt의 주소로 채운다. 아티팩트 링크에서는 바깥 서버와 통신할 수 없어 비워 둔다
 let nick=null,lbData=null,lbState='',lbBusy=false,lbAgain=false;
 try{nick=localStorage.getItem('bs_nick');}catch(e){}
-async function lb(body){const r=await fetch(LB_URL,{method:'POST',body:JSON.stringify(body)});return r.json();}
+let srvNow=0; // 서버가 마지막으로 알려 준 시각
+async function lb(body){
+  const r=await fetch(LB_URL,{method:'POST',body:JSON.stringify(body)}),j=await r.json();
+  if(j&&j.now){
+    srvNow=j.now;
+    // 처음 서버와 닿은 기기: 지금부터 쌓는 것으로 적는다. 다만 이미 점수가 있는 기기(이 기능이 생기기 전)는 0으로 쳐서, 지운 적이 있으면 따르게 한다
+    try{if(localStorage.getItem('bs_since')===null)localStorage.setItem('bs_since',loadStats().score>0?0:srvNow);}catch(e){}
+  }
+  return j;
+}
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function keepStats(rec){try{localStorage.setItem('bs_stats',JSON.stringify({score:rec.score,n:rec.n,p:rec.p,perfect:rec.perfect}));}catch(e){}}
 function rankRow(r,me){return '<div class="rankRow'+(me?' me':'')+'"><i>'+r.rank+'</i><span>'+esc(me&&isAnon()?'나':r.nick)+'</span><b>'+r.score+'점</b><em>PERFECT '+(r.rate===null?'-':r.rate+'%')+'</em></div>';}
@@ -913,19 +925,35 @@ async function lbSync(){ // 내 기록을 올리고 순위표를 받아 온다. 
   if(lbBusy){lbAgain=true;return;}
   lbBusy=true;
   try{
-    if(nick){const r=await lb({a:'save',nick,stats:loadStats()});if(r.ok&&r.kept)keepStats(r.rec);} // 서버 기록이 더 높으면 그것을 받아 쓴다
+    if(nick){
+      const r=await lb({a:'save',nick,stats:loadStats(),since:sinceGet()});
+      if(r.ok&&r.wiped){ // 관리자가 이 닉네임을 지웠거나 전체 초기화한 경우: 점수와 닉네임을 모두 잊고 새로 묻는다
+        freshStart();nick=null;try{localStorage.removeItem('bs_nick');localStorage.removeItem('bs_nickAsk');}catch(e){}
+        toast('순위표에서 기록이 지워졌습니다.');nickChanging=false;askNick();
+      }
+      else if(r.ok&&r.kept)keepStats(r.rec); // 서버 기록이 더 높으면 그것을 받아 쓴다
+    }
     const t=await lb({a:'top',nick:nick||''});
     if(t.ok){lbData=t;lbState='';}else lbState='순위표를 불러오지 못했습니다';
   }catch(e){lbState='순위표에 연결하지 못했습니다';}
   lbBusy=false;showStats();
   if(lbAgain){lbAgain=false;lbSync();}
 }
-function askNick(){$('nickBox').hidden=false;$('nickForm').hidden=false;$('nickAsk').hidden=true;$('nickMsg').textContent='';$('nickIn').value='';setTimeout(()=>$('nickIn').focus(),50);}
+// 이 기기가 지금 기록을 쌓기 시작한 시각. 서버가 "그 뒤에 지웠다"고 하면 기록을 버린다.
+// 값이 없는데 점수가 이미 있으면(이 기능이 생기기 전의 기기) 0으로 쳐서, 지운 적이 있으면 따르게 한다
+function sinceGet(){let v=null;try{v=localStorage.getItem('bs_since');}catch(e){}return v===null?0:+v;}
+function sinceNow(){try{localStorage.setItem('bs_since',srvNow||Date.now());}catch(e){}} // 서버 시각을 쓴다
+function freshStart(){keepStats({score:0,n:[0,0,0],p:[0,0,0],perfect:0});sinceNow();showStats();} // 0점부터 다시
+let nickChanging=false; // 닉네임 변경으로 창을 열었는가 (그냥 정하기와 달리 점수를 가져가지 않는다)
+function askNick(){$('nickWarn').hidden=!nickChanging;$('nickBox').hidden=false;$('nickForm').hidden=false;$('nickAsk').hidden=true;$('nickMsg').textContent='';$('nickIn').value='';setTimeout(()=>$('nickIn').focus(),50);}
 let toastTimer=0;
 function toast(t){const o=$('toast');o.textContent=t;o.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{o.hidden=true;},2800);}
 let nickFound=null; // 서버에 이미 있는 닉네임을 적었을 때 그 기록
 function nickDone(name,back){ // 닉네임이 정해졌다
   if(isAnon()&&nick!==name)lb({a:'drop',nick}).catch(()=>{}); // anonymous로 하다가 이름을 정하면 예전 줄은 지운다
+  if(nickChanging&&!back)freshStart(); // 닉네임을 바꾸면 점수는 따라가지 않는다. 예전 닉네임의 기록은 서버에 그대로 남는다
+  if(back)sinceNow(); // 서버의 기록을 이어 받았으면 지금부터 쌓는 것으로 친다
+  nickChanging=false;
   nick=name;try{localStorage.setItem('bs_nick',nick);}catch(e){}
   $('nickBox').hidden=true;
   if(back){tutDone();if(puzzle.tut!==undefined)newPuzzle();toast('돌아오신 것을 환영합니다!');} // 돌아온 사람은 튜토리얼을 건너뛴다
@@ -945,7 +973,7 @@ $('nickOk').onclick=async()=>{
   $('nickOk').disabled=false;
 };
 $('nickYes').onclick=()=>{ // 기존 플레이어: 기록을 이어 받는다. 이 기기의 점수가 더 높으면 그것을 올린다
-  if(nickFound.score>=loadStats().score)keepStats(nickFound);
+  if(nickChanging||nickFound.score>=loadStats().score)keepStats(nickFound); // 닉네임 변경으로 들어왔으면 무조건 그 닉네임의 기록을 쓴다
   nickDone(nickFound.nick,true);
 };
 $('nickNew').onclick=async()=>{ // 다른 사람: 뒤에 숫자를 붙인 새 닉네임으로 시작한다
@@ -967,12 +995,13 @@ async function anonNick(){ // 닉네임 없이 하는 사람: anonymous + 숫자
   throw new Error('full');
 }
 $('nickNo').onclick=async()=>{
-  $('nickBox').hidden=true;try{localStorage.setItem('bs_nickAsk','no');}catch(e){}
+  $('nickBox').hidden=true;nickChanging=false;try{localStorage.setItem('bs_nickAsk','no');}catch(e){}
   if(nick||!LB_URL)return; // 이미 이름(또는 anonymous 이름)이 있으면 그대로
   try{nick=await anonNick();try{localStorage.setItem('bs_nick',nick);}catch(e){}showStats();lbSync();}
   catch(e){lbState='순위표에 연결하지 못했습니다';showStats();} // 실패하면 이름 없이 그냥 한다
 };
-$('nickSet').onclick=askNick;
+$('nickSet').onclick=()=>{nickChanging=false;askNick();};
+$('nickChange').onclick=()=>{nickChanging=true;askNick();};
 // 개발자에게 코멘트 남기기: 순위표 서버가 있을 때만 쓸 수 있다
 $('noteBtn').hidden=!LB_URL;
 $('noteBtn').onclick=()=>{$('noteBox').hidden=false;$('noteMsg').textContent='';setTimeout(()=>$('noteIn').focus(),50);};
@@ -995,6 +1024,7 @@ function showStats(pop){
   const total=v.n[0]+v.n[1]+v.n[2],rate=total?Math.round(v.perfect/total*100)+'%':'-';
   const row=rankHtml(v,rate);
   $('rankList').innerHTML=row;$('rankBox').innerHTML='<b>순위</b>'+row; // 폰의 작은 창에도 같은 모양으로
+  $('nickChange').hidden=!LB_URL||!nick||isAnon(); // 닉네임이 있는 사람만 바꿀 수 있다
   $('nickSet').hidden=!LB_URL||(!!nick&&!isAnon()); // 이름이 없거나 anonymous로 하고 있으면 닉네임을 정할 수 있다
 }
 function award(){ // 완성했을 때 한 번 불린다
