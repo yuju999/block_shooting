@@ -912,9 +912,9 @@ function rankHtml(v,rate){
   let h;
   if(!lbData)h=(nick?mine:'')+'<div class="rankSoon">'+(lbState||'순위표를 불러오는 중입니다')+'</div>';
   else{
-    const rows=lbData.list.slice(0,10),same=r=>!!nick&&r.nick.toLowerCase()===nick.toLowerCase();
+    const rows=lbData.list.slice(0,5),same=r=>!!nick&&r.nick.toLowerCase()===nick.toLowerCase();
     h=rows.length?rows.map(r=>rankRow(r,same(r))).join(''):'<div class="rankSoon">아직 아무도 없습니다</div>';
-    if(lbData.me&&lbData.me.rank>rows.length)h+=rankRow(lbData.me,true); // 내가 10등 밖이면 맨 아래에 내 줄
+    if(lbData.me&&lbData.me.rank>rows.length)h+=rankRow(lbData.me,true); // 내가 5등 밖이면 맨 아래에 내 줄
     if(lbState)h+='<div class="rankSoon">'+lbState+'</div>';
   }
   if(!nick)h+=mine; // 닉네임이 없으면 순위에 오르지 않은 내 점수를 따로 보여 준다
