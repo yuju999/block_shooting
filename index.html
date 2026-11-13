@@ -138,6 +138,7 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <canvas id="t"></canvas></div>
   <div id="msg"></div>
   <button id="next" hidden>다음으로 넘어가기</button>
+  <div id="row1"><button id="new">새 문제</button><button id="sol">정답 보기</button></div>
   <div id="tools"><button id="guideBtn">버튼 설명</button>
   <div id="pick">
     <button id="tintBtn" class="txt">색 바꾸기</button>
@@ -149,13 +150,12 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
     </div>
   </div>
   </div>
-  <button id="new">새 문제</button><button id="sol">정답 보기</button><button id="tutAgain">튜토리얼</button>
   <fieldset id="opts"><legend>문제 설정 (바꾸면 새 문제)</legend>
     블럭 종류 <select id="kind"><option value="4" selected>4칸<option value="4x">4칸, 같은 블럭은 떨어뜨리기<option value="5">5칸<option value="45">4칸 + 5칸 혼합<option value="all">1~6칸 혼합 (하나씩)</select><br>
     판 크기 <select id="size"></select><br>
     블럭 수 <select id="n"></select>
   </fieldset>
-  <p><button id="toGame">게임으로 돌아가기</button><button id="noteBtn" hidden>개발자에게 코멘트 남기기</button></p>
+  <p><button id="toGame">게임으로 돌아가기</button><button id="tutAgain">튜토리얼</button><button id="noteBtn" hidden>개발자에게 코멘트 남기기</button></p>
   <p>아래 블럭을 끌어서 판 쪽으로 가져가면 가까운 테두리에서 조준됩니다. 놓으면 발사.<br>
   판 위의 블럭을 누르면 빠집니다. PC에서는 우클릭으로도 뺍니다. 다른 블럭이 기대고 있으면 빠지지 않고, 기대고 있는 블럭이 반짝입니다.<br>
   회전: 폰에서는 아래 블럭을 톡 누르기. PC에서는 블럭 우클릭이나 R 키.</p>
