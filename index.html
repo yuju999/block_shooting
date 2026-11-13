@@ -1016,8 +1016,8 @@ $('noteOk').onclick=async()=>{
   }catch(e){$('noteMsg').textContent='보내지 못했습니다. 잠시 뒤에 다시 해 주세요.';}
   $('noteOk').disabled=false;
 };
-// ---- 기록과 점수: 난이도 버튼으로 받은 문제를 풀면 점수가 쌓인다. 하 2점, 중 3점, 상 5점, PERFECT면 1점 더 ----
-const POINTS=[2,3,5];
+// ---- 기록과 점수: 난이도 버튼으로 받은 문제를 풀면 점수가 쌓인다. 하 2점, 중 3점, 상 4점, PERFECT면 1점 더 ----
+const POINTS=[2,3,4];
 function loadStats(){try{const v=JSON.parse(localStorage.getItem('bs_stats'));if(v&&v.n){if(!v.p)v.p=[0,0,0];return v;}}catch(e){}return {score:0,n:[0,0,0],p:[0,0,0],perfect:0};}
 function showStats(pop){
   const v=loadStats();
