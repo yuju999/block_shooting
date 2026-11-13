@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--ARTIFACT-START-->
+<title>블럭 퍼즐</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 배치: 판이 먼저, 목표 그림과 설정은 옆(넓은 화면) 또는 아래(폰) */
+:root{--bg:#f1f3f5;--fg:#24292f;--muted:#57606a;--line:#b6bec7;--ok:#1a7f37;--board:#ffffff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#171b21;--fg:#e6e9ed;--muted:#a3adb8;--line:#4a535e;--ok:#4cc26b;--board:#ffffff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171b21;--fg:#e6e9ed;--muted:#a3adb8;--line:#4a535e;--ok:#4cc26b;--board:#ffffff;color-scheme:dark}
+body{font-family:system-ui,"Malgun Gothic",sans-serif;background:var(--bg);color:var(--fg);margin:0;padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+#side{width:310px;max-width:100%}
+button,select{font-size:14px;padding:6px 10px;margin:2px;cursor:pointer}
+canvas{background:var(--board);border:1px solid var(--line);max-width:100%;height:auto}
+#c{display:block;box-sizing:border-box;cursor:grab;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+@media (max-width:719px){select{font-size:16px}}
+#game{display:block;max-width:100%;min-width:0;flex:0 1 660px}
+[hidden]{display:none!important}
+#bar button,#pick button,#optBtn{width:48px;height:48px;margin:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+#stage{position:relative}
+/* 버튼 설명: 화면을 어둡게 덮고 버튼마다 번호를 붙인 뒤 가운데에 뜻을 적는다. 아무 데나 누르면 닫힌다 */
+#guide{position:fixed;inset:0;z-index:50;background:rgba(20,22,30,.66);cursor:pointer}
+.gRing{position:fixed;display:grid;place-items:center;background:#fff;color:#24292f;border-radius:14px;box-shadow:0 0 0 3px #facc15}
+.gRing svg{width:62%;height:62%}
+.gNum,.gBox li b{width:22px;height:22px;border-radius:50%;background:#facc15;color:#24292f;font-weight:800;font-size:13px;display:grid;place-items:center}
+.gNum{position:fixed}
+.gBox{position:fixed;left:50%;transform:translateX(-50%);width:min(340px,calc(100vw - 32px));box-sizing:border-box;background:#fff;color:#24292f;border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.55}
+.gBox ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}.gBox li{display:flex;gap:10px;align-items:flex-start}
+.gBox li b{flex:none;margin-top:1px}.gBox p{margin:10px 0 0;font-size:14px;color:#57606a}.gBox .gTap{text-align:center;font-weight:700;color:#24292f}
+#record{margin-bottom:14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}#record.flash{animation:flash .9s}
+@keyframes flash{30%{box-shadow:0 0 0 4px #facc15}}
+#rankList{margin-top:6px;font-size:15px}.rankRow{display:flex;gap:10px;align-items:baseline;padding:4px 0;font-variant-numeric:tabular-nums}
+.rankRow i{font-style:normal;width:22px;color:var(--muted)}.rankRow span{flex:1;font-weight:700}.rankRow em{font-style:normal;font-size:13px;color:var(--muted)}
+.rankSoon{font-size:13px;color:var(--muted);padding:2px 0 4px}
+.rankRow.me{background:rgba(250,204,21,.28);border-radius:6px;padding-left:6px;padding-right:6px}
+#nickSet{margin:6px 0 0}
+.nb #nickQ{color:#24292f;font-size:16px;font-weight:600;margin:10px 0 14px;white-space:pre-line}.nbBtns #nickYes{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
+#toast{position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:70;max-width:calc(100vw - 32px);background:#24292f;color:#fff;border-radius:999px;padding:10px 20px;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.3);white-space:nowrap}
+#nickBox{position:fixed;inset:0;z-index:60;background:rgba(20,22,30,.66);display:grid;place-items:center;padding:16px}
+.nb{width:min(340px,100%);box-sizing:border-box;background:#fff;color:#24292f;border-radius:14px;padding:16px;font-size:15px;line-height:1.55}
+.nb b{font-size:18px}.nb p{margin:6px 0 10px;font-size:14px;color:#57606a}.nb #nickMsg{min-height:21px;margin:8px 0;color:#b42318;font-weight:600}
+.nb input{width:100%;box-sizing:border-box;font-size:18px;padding:10px 12px;border:2px solid #b6bec7;border-radius:10px}
+.nbBtns{display:flex;gap:8px}.nbBtns button{margin:0;flex:1;height:46px;border-radius:10px;border:1px solid #b6bec7;background:#fff;color:#24292f;font-size:15px}
+.nbBtns #nickOk{background:#24292f;color:#fff;border-color:#24292f;font-weight:700}
+#favs{margin-bottom:12px}#favsList{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}#favsList canvas{width:56px;height:56px;cursor:pointer;border-radius:6px}
+/* 난이도 버튼. 폰에서는 목표 그림 칸을 빼고 이 버튼이 그 자리에 온다 (목표는 판 위의 색칠로 보인다) */
+#levels{margin-bottom:10px}#levels div{display:flex;gap:8px;margin-top:6px}
+#levels button{flex:1;margin:0;height:48px;font-size:18px;font-weight:700;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--fg)}
+#levels button[aria-pressed="true"]{color:#fff;border-color:transparent}
+#levels button[data-lv="0"][aria-pressed="true"]{background:#2f9e63}#levels button[data-lv="1"][aria-pressed="true"]{background:#d99a1c}#levels button[data-lv="2"][aria-pressed="true"]{background:#d6453d}
+@media (max-width:719px){#goal{display:none}#side{width:100%}}
+#tutBar{display:flex;gap:10px;align-items:center;background:#24292f;color:#fff;border-radius:12px;padding:10px 14px;margin-bottom:8px;font-size:17px;font-weight:600;line-height:1.45}
+#tutStep{flex:none;background:#fff;color:#24292f;border-radius:999px;padding:0 10px;font-size:14px}
+#tutText{flex:1;min-width:0}
+#tutSkip{flex:none;margin:0;padding:6px 10px;font-size:13px;border-radius:8px;border:1px solid #6e7781;background:transparent;color:#d0d7de}
+@media (max-width:719px){#tutBar{font-size:15px;padding:8px 10px;gap:8px}}
+#bar{position:absolute;top:7px;right:7px;z-index:1;display:flex;gap:6px}
+#bar button,#optBtn{width:44px;height:44px;background:#fff;color:#24292f;border-color:#b6bec7}
+#optBtn{position:absolute;top:7px;left:7px;z-index:1}
+/* 하트: 문제를 난이도와 함께 저장 */
+#rankBtn{position:absolute;top:7px;left:57px;z-index:1;width:44px;height:44px;margin:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #b6bec7;background:#fff;color:#24292f}
+#rankBtn:active{transform:scale(.94)}
+#rankBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;flex-direction:column;gap:2px;background:#fff;color:#24292f;border:1px solid #b6bec7;border-radius:12px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:14px;line-height:1.6}
+#rankBox{min-width:230px}#rankBox>b{font-size:15px}#rankBox .rankRow i,#rankBox .rankRow em,#rankBox .rankSoon{color:#57606a}
+#fav{position:absolute;top:7px;left:107px;z-index:1;width:44px;height:44px;margin:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #b6bec7;background:#fff;color:#24292f}
+#fav:active{transform:scale(.94)}#fav.on{color:#e5383b}#fav.on svg{fill:currentColor}
+#favBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;gap:6px;align-items:center;background:#fff;border:1px solid #b6bec7;border-radius:12px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+#favBox button{margin:0;min-width:52px;height:42px;border-radius:9px;border:3px solid transparent;color:#fff;font-size:17px;font-weight:700}
+#lv0{background:#2f9e63}#lv1{background:#8fae2a}#lv2{background:#d99a1c}#lv3{background:#e8730c}#lv4{background:#d6453d}#lv5{background:#8b1e3f}
+#favBox{flex-wrap:wrap;max-width:calc(100% - 14px);box-sizing:border-box}
+#favBox button[aria-pressed="true"]{border-color:#24292f}
+#favBox #unfav{background:#fff;color:#24292f;border:1px solid #b6bec7;font-size:13px;font-weight:400;padding:0 10px}
+#favLv{position:absolute;top:7px;left:157px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700}
+@media (max-width:719px){#favLv{top:4px;left:124px;height:36px;min-width:36px;padding:0 9px;font-size:16px}#fav{top:4px;left:84px;width:36px;height:36px}#fav svg,#rankBtn svg{width:22px;height:22px}#rankBtn{top:4px;left:44px;width:36px;height:36px}#rankBox{top:44px;left:4px}#favBox{top:44px;left:4px}}
+@media (max-width:719px){#bar{top:4px;right:4px}#optBtn{top:4px;left:4px}#bar button,#optBtn{width:36px;height:36px}#bar svg,#optBtn svg{width:22px;height:22px}}
+#pick{margin-top:8px}
+#pick,#acts,#picker{display:flex;align-items:center;gap:8px}
+#pick button.txt{width:auto;padding:0 14px;font-size:15px;font-weight:600}
+#tName{min-width:64px;text-align:center;font-size:15px;font-weight:600}
+#bar button:active,#pick button:active,#optBtn:active{transform:scale(.94)}
+#msg{font-size:18px;font-weight:bold;height:26px;margin:8px 0;color:var(--ok)}
+p,label{font-size:13px;line-height:1.7;color:var(--muted)}
+fieldset{margin-top:10px;border:1px solid var(--line)}
+</style>
+<!--HEAD-END--></head><body>
+<div id="game">
+  <div id="guide" hidden></div>
+  <div id="toast" hidden></div>
+  <div id="nickBox" hidden><div class="nb">
+    <b>닉네임</b>
+    <p>닉네임을 정하면 순위표에 오릅니다. 전에 쓰던 닉네임을 적으면 기록을 이어서 합니다.</p>
+    <div id="nickForm">
+      <input id="nickIn" maxlength="10" autocomplete="off" placeholder="10자까지" enterkeyhint="done">
+      <p id="nickMsg"></p>
+      <div class="nbBtns"><button id="nickOk">시작</button><button id="nickNo">닉네임 없이 하기</button></div>
+    </div>
+    <div id="nickAsk" hidden>
+      <p id="nickQ"></p>
+      <div class="nbBtns"><button id="nickYes">예</button><button id="nickNew">아니오</button></div>
+    </div>
+  </div></div>
+  <div id="tutBar" hidden><span id="tutStep"></span><span id="tutText"></span><button id="tutSkip">건너뛰기</button></div>
+  <div id="stage">
+  <div id="bar">
+    <div id="acts">
+    <button id="undo" aria-label="되돌리기" title="되돌리기 (Z)"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button id="reset" aria-label="다시하기" title="다시하기"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+    </div>
+  </div>
+  <button id="optBtn" aria-label="옵션" title="옵션"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.4"/><circle cx="9" cy="12" r="2.4"/><circle cx="17" cy="18" r="2.4"/></svg></button>
+  <button id="rankBtn" aria-label="순위" title="순위" aria-expanded="false"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 5 18h14l1.5-9.5-5 4L12 6l-3.5 6.5z"/><path d="M5 21h14"/></svg></button>
+  <div id="rankBox" hidden></div>
+  <button id="fav" aria-label="문제 저장" title="문제 저장" aria-expanded="false"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg></button>
+  <button id="favLv" hidden title="저장한 난이도"></button>
+  <div id="favBox" hidden><button id="lv0">하</button><button id="lv1">중하</button><button id="lv2">중</button><button id="lv3">중상</button><button id="lv4">상</button><button id="lv5">최상</button><button id="unfav" hidden>저장 취소</button></div>
+  <canvas id="c"></canvas>
+  </div>
+</div>
+<div id="side">
+  <div id="record"><b>순위</b><div id="rankList"></div><button id="nickSet" hidden>닉네임 정하기</button></div>
+  <div id="levels"><b>난이도</b><div><button data-lv="0" aria-pressed="false">하</button><button data-lv="1" aria-pressed="false">중</button><button data-lv="2" aria-pressed="false">상</button></div></div>
+  <div id="favs" hidden><b>즐겨찾기</b> <span id="favsN"></span><div id="favsList"></div></div>
+  <div id="goal"><b>목표 그림</b><br>
+  <canvas id="t"></canvas></div>
+  <div id="msg"></div>
+  <button id="next" hidden>다음으로 넘어가기</button>
+  <button id="guideBtn">버튼 설명</button><br>
+  <button id="new">새 문제</button><button id="sol">정답 보기</button><button id="tutAgain">튜토리얼</button>
+  <fieldset id="opts"><legend>문제 설정 (바꾸면 새 문제)</legend>
+    블럭 종류 <select id="kind"><option value="4" selected>4칸<option value="4x">4칸, 같은 블럭은 떨어뜨리기<option value="5">5칸<option value="45">4칸 + 5칸 혼합<option value="all">1~6칸 혼합 (하나씩)</select><br>
+    판 크기 <select id="size"></select><br>
+    블럭 수 <select id="n"></select>
+  </fieldset>
+  <p><button id="toGame">게임으로 돌아가기</button></p>
+  <p>아래 블럭을 끌어서 판 쪽으로 가져가면 가까운 테두리에서 조준됩니다. 놓으면 발사.<br>
+  판 위의 블럭을 누르면 빠집니다. PC에서는 우클릭으로도 뺍니다. 다른 블럭이 기대고 있으면 빠지지 않고, 기대고 있는 블럭이 반짝입니다.<br>
+  회전: 폰에서는 아래 블럭을 톡 누르기. PC에서는 블럭 우클릭이나 R 키.</p>
+  <p><button id="devBtn" aria-expanded="false" aria-controls="dev">개발자 도구</button></p>
+  <fieldset id="dev" hidden>
+    고정 칸 (최대) <select id="seeds"></select><br>
+    <label><input type="checkbox" id="oh"> 판 밖으로 삐져나오기 허용</label><br>
+    <label><input type="checkbox" id="ord" checked> 순서가 중요한 문제만</label><br>
+    <label><input type="checkbox" id="autoNext" checked> 완성하면 자동으로 다음 문제</label><br>
+    <label><input type="checkbox" id="favOn"> 하트를 난이도 분류용으로 쓰기 (끄면 즐겨찾기)</label><br>
+    <label><input type="checkbox" id="ghost" checked> 멈출 자리 미리보기</label><br>
+    <label><input type="checkbox" id="over" checked> 목표 윤곽을 판에 겹치기</label>
+    <div id="pick">
+      <button id="tintBtn" class="txt">색 바꾸기</button>
+      <div id="picker" hidden>
+        <button id="tPrev" aria-label="이전 색"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <span id="tName"></span>
+        <button id="tNext" aria-label="다음 색"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        <button id="tOk" class="txt">확인</button>
+      </div>
+    </div>
+    <p style="margin:8px 0 0">이 문제의 종합 점수 <b id="devScore">-</b></p>
+    <p style="margin:8px 0 0">하트로 저장한 문제 <b id="favCount">0</b>개 <button id="favCopy">목록 복사</button></p>
+    <textarea id="favText" rows="3" readonly hidden style="width:100%;box-sizing:border-box;font-size:12px"></textarea>
+  </fieldset>
+</div>
+<script>
+//LOGIC-START
+const SETS={
+ 4:{I:[[0,0],[1,0],[2,0],[3,0]],O:[[0,0],[1,0],[0,1],[1,1]],T:[[0,0],[1,0],[2,0],[1,1]],S:[[1,0],[2,0],[0,1],[1,1]],L:[[2,0],[0,1],[1,1],[2,1]]},
+ 5:{F:[[1,0],[2,0],[0,1],[1,1],[1,2]],I:[[0,0],[1,0],[2,0],[3,0],[4,0]],L:[[0,0],[0,1],[0,2],[0,3],[1,3]],N:[[0,0],[1,0],[1,1],[2,1],[3,1]],
+    P:[[0,0],[1,0],[0,1],[1,1],[0,2]],T:[[0,0],[1,0],[2,0],[1,1],[1,2]],U:[[0,0],[2,0],[0,1],[1,1],[2,1]],V:[[0,0],[0,1],[0,2],[1,2],[2,2]],
+    W:[[0,0],[0,1],[1,1],[1,2],[2,2]],X:[[1,0],[0,1],[1,1],[2,1],[1,2]],Y:[[0,0],[1,0],[2,0],[3,0],[1,1]],Z:[[0,0],[1,0],[1,1],[1,2],[2,2]]}
+};
+// 이름 뒤의 ' 는 거울상 블럭. 4칸은 원래 테트리스 7색 (S' = Z, L' = J)
+const COLORS={
+ 4:{I:'#00b4d8',O:'#e9c46a',T:'#9b5de5',S:'#52b788',"S'":'#e63946',L:'#f4863a',"L'":'#3a66d6'},
+ 5:{F:'#00b4d8',I:'#e9c46a',L:'#9b5de5',N:'#e63946',P:'#3a66d6',T:'#52b788',U:'#f4863a',V:'#d6409f',W:'#8d6e63',X:'#2a9d8f',Y:'#7c8a2e',Z:'#5c6bc0',
+    "F'":'#1b4965',"L'":'#b5838d',"N'":'#606c38',"P'":'#ff8fab',"Y'":'#6d597a',"Z'":'#bc6c25'}
+};
+const DIRS={top:[0,1],bottom:[0,-1],left:[1,0],right:[-1,0]};
+const SEED='#222';
+let G=7; // 판 한 변의 칸 수
+function norm(s){const mx=Math.min(...s.map(p=>p[0])),my=Math.min(...s.map(p=>p[1]));return s.map(p=>[p[0]-mx,p[1]-my]);}
+function rot(s){return norm(s.map(([x,y])=>[-y,x]));}
+function flip(s){return norm(s.map(([x,y])=>[-x,y]));}
+function key(x,y){return x+','+y;}
+function newOcc(seeds){return new Map(seeds.map(k=>[k,SEED]));}
+function inBoard(x,y){return x>=0&&x<G&&y>=0&&y<G;}
+// off: 위/아래에서 쏠 땐 블럭 왼쪽 끝의 x, 좌/우에서 쏠 땐 블럭 위쪽 끝의 y
+function shoot(shape,side,off,occ,overhang){
+  const [dx,dy]=DIRS[side],far=G+8;
+  let cells=shape.map(([x,y])=>dx===0?[x+off,y-dy*far]:[x-dx*far,y+off]);
+  for(let i=0;i<3*G+30;i++){
+    const nx=cells.map(([x,y])=>[x+dx,y+dy]);
+    if(nx.some(([x,y])=>occ.has(key(x,y)))){
+      const ok=overhang
+        ? cells.every(([x,y])=>x>=-3&&x<=G+2&&y>=-3&&y<=G+2)&&cells.some(([x,y])=>inBoard(x,y))
+        : cells.every(([x,y])=>inBoard(x,y));
+      return ok?cells:null;
+    }
+    cells=nx;
+  }
+  return null;
+}
+function laneRange(shape,side,overhang){
+  const size=1+Math.max(...shape.map(p=>DIRS[side][0]===0?p[0]:p[1]));
+  return overhang?[-(size-1),G-1]:[0,G-size];
+}
+function sameSet(occ,target){return occ.size===target.size&&[...occ.keys()].every(k=>target.has(k));}
+// 정답의 발사들을 다른 순서로 쐈을 때 목표가 안 나오는 순서의 비율 (0 = 순서 무관)
+function orderWeight(p,overhang,rnd=Math.random){
+  const run=order=>{
+    const occ=newOcc(p.seeds);
+    for(const s of order){const c=shoot(s.shape,s.side,s.off,occ,overhang);if(!c)return false;c.forEach(([x,y])=>occ.set(key(x,y),1));}
+    return sameSet(occ,p.target);
+  };
+  let fail=0;const K=150;
+  for(let i=0;i<K;i++){
+    const o=[...p.steps];
+    for(let j=o.length-1;j>0;j--){const r=Math.floor(rnd()*(j+1));[o[j],o[r]]=[o[r],o[j]];}
+    if(!run(o))fail++;
+  }
+  return fail/K;
+}
+// fixed: 가운데 칸을 포함한 고정 칸 총 개수
+function rotKey(s){let best=null,c=norm(s);for(let r=0;r<4;r++){c=rot(c);const k=JSON.stringify([...c].sort((a,b)=>a[0]-b[0]||a[1]-b[1]));if(!best||k<best)best=k;}return best;}
+function freeKey(s){const a=rotKey(s),b=rotKey(flip(s));return a<b?a:b;}
+function polyominoes(n){
+  let cur=[[[0,0]]];
+  for(let k=1;k<n;k++){
+    const seen=new Map();
+    for(const p of cur)for(const [x,y] of p)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      if(p.some(c=>c[0]===x+dx&&c[1]===y+dy))continue;
+      const key=freeKey([...p,[x+dx,y+dy]]);if(!seen.has(key))seen.set(key,JSON.parse(key));
+    }
+    cur=[...seen.values()];
+  }
+  return cur;
+}
+for(const n of [1,2,3,6]){SETS[n]={};polyominoes(n).forEach((p,i)=>SETS[n]['p'+i]=p);}
+const SIZE_COLOR={1:'#6c757d',2:'#ff8fab',3:'#2a9d8f',6:'#8d6e63'}; // 4칸, 5칸 외에는 칸 수별 한 가지 색
+// 블럭 종류: 어떤 칸 수의 블럭을 어떤 순서로 쓸지
+const KINDS={
+  '4':{max:4,sizes:(n,R)=>Array(n).fill(4)},
+  '4x':{max:4,apart:true,sizes:(n,R)=>Array(n).fill(4)}, // apart: 같은 블럭끼리 변으로 붙지 않는다
+  '5':{max:5,sizes:(n,R)=>Array(n).fill(5)},
+  '45':{max:5,sizes:(n,R)=>shuffle(Array.from({length:n},(_,i)=>i%2?5:4),R)},          // 4칸과 5칸 반반
+  'all':{max:6,sizes:(n,R)=>{let a=[];while(a.length<n)a=a.concat(shuffle([1,2,3,4,5,6],R));return a.slice(0,n);}} // 1~6칸을 하나씩
+};
+function shuffle(a,R){for(let i=a.length-1;i>0;i--){const j=R(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function generateOnce(kind,n,overhang,size,fixed,rnd){
+  G=size;
+  const sides=Object.keys(DIRS),mid=(G-1)/2;
+  const R=k=>Math.floor(rnd()*k);
+  const sizes=KINDS[kind].sizes(n,R);
+  // 가운데 고정 칸: 홀수 판은 정가운데 한 칸, 짝수 판은 가운데 네 칸. 이 칸들은 고정 칸 개수에서 하나로 친다
+  const lo=Math.floor(mid),hi=Math.ceil(mid),seeds=[...new Set([key(lo,lo),key(hi,lo),key(lo,hi),key(hi,hi)])],core=seeds.length;
+  for(let t=0;t<200&&seeds.length<core+fixed-1;t++){
+    const sx=2+R(G-4),sy=2+R(G-4),k=key(sx,sy);
+    if(!seeds.includes(k)&&Math.max(Math.abs(sx-mid),Math.abs(sy-mid))>hi-mid+1)seeds.push(k); // 가운데 칸들과 붙지 않게
+  }
+  const used=new Set(seeds.slice(0,core));
+  const occ=newOcc(seeds), steps=[], typeAt=new Map(), apart=KINDS[kind].apart;
+  for(let t=0;t<5000&&steps.length<n;t++){
+    const sz=sizes[steps.length],set=SETS[sz],types=Object.keys(set),raw=types[R(types.length)],mirror=R(2)===1;
+    const chiral=rotKey(set[raw])!==rotKey(flip(set[raw])),name=raw+(mirror&&chiral?"'":''); // 뒤집기가 없으므로 거울상은 별개의 블럭
+    const base=mirror?flip(set[raw]):set[raw],type=sz+name,cmap=COLORS[sz]||{},color=cmap[name]||cmap[raw]||SIZE_COLOR[sz];
+    let shape=base;
+    for(let i=R(4);i>0;i--)shape=rot(shape);
+    const side=sides[R(4)], [lo,hi]=laneRange(shape,side,overhang), off=lo+R(hi-lo+1);
+    const cells=shoot(shape,side,off,occ,overhang);
+    if(!cells)continue;
+    if(apart&&cells.some(([x,y])=>Object.values(DIRS).some(([ax,ay])=>typeAt.get(key(x+ax,y+ay))===type)))continue; // 같은 블럭 옆에는 놓지 않는다
+    cells.forEach(([x,y])=>typeAt.set(key(x,y),type));
+    cells.forEach(([x,y])=>{const k=key(x+DIRS[side][0],y+DIRS[side][1]);if(seeds.includes(k))used.add(k);}); // 이 블럭을 멈춰 세운 고정 칸
+    cells.forEach(([x,y])=>occ.set(key(x,y),1));
+    steps.push({type,size:sz,color,base,shape,side,off,cells});
+  }
+  return {kind,size,core,seeds,unused:seeds.filter(k=>!used.has(k)),target:new Set(occ.keys()),steps};
+}
+// 블럭끼리 변으로 이어진 덩어리를 나누고(고정 칸을 거쳐서만 이어진 것은 따로 본다), 가장 큰 덩어리의 블럭만 남긴다.
+// 남은 블럭 수가 달라지면 그 블럭 수의 문제로 분류된다.
+function keepMainGroup(p){
+  const st=p.steps,par=st.map((_,i)=>i),find=i=>par[i]===i?i:(par[i]=find(par[i]));
+  const owner=new Map();st.forEach((b,i)=>b.cells.forEach(([x,y])=>owner.set(key(x,y),i)));
+  st.forEach((b,i)=>b.cells.forEach(([x,y])=>{for(const [dx,dy] of Object.values(DIRS)){const j=owner.get(key(x+dx,y+dy));if(j!==undefined)par[find(i)]=find(j);}}));
+  const size=new Map();st.forEach((b,i)=>size.set(find(i),(size.get(find(i))||0)+b.cells.length));
+  let top=-1;size.forEach((v,k)=>{if(top<0||v>size.get(top))top=k;});
+  p.groups=size.size;
+  p.steps=st.filter((_,i)=>find(i)===top);
+  const used=new Set(p.seeds.slice(0,p.core));p.target=new Set(p.seeds);
+  p.steps.forEach(b=>b.cells.forEach(([x,y])=>{p.target.add(key(x,y));const k=key(x+DIRS[b.side][0],y+DIRS[b.side][1]);if(p.seeds.includes(k))used.add(k);}));
+  p.unused=p.seeds.filter(k=>!used.has(k));
+}
+function generate(kind,n,overhang,size,fixed,needOrder,rnd=Math.random){
+  let best=null,bestScore=-1;
+  for(let i=0;i<400;i++){
+    const p=generateOnce(kind,n,overhang,size,fixed,rnd);
+    keepMainGroup(p);
+    const okCount=p.steps.length===n // 블럭 수가 줄었으면 이 블럭 수의 문제가 아니므로 버린다
+      &&(!KINDS[kind].apart||new Set(p.steps.map(b=>b.type)).size<n); // 떨어뜨리기 문제는 같은 블럭이 적어도 한 쌍 있어야 규칙이 의미가 있다
+    p.orderWeight=needOrder&&okCount?orderWeight(p,overhang,rnd):0;
+    const okSeeds=!p.unused.length,okOrder=!needOrder||p.orderWeight>=0.5,score=(okCount?4:0)+(okSeeds?2:0)+p.orderWeight;
+    if(score>bestScore){best=p;bestScore=score;}
+    if(okCount&&okSeeds&&okOrder)break;
+  }
+  // 아무 블럭도 걸리지 않은 고정 칸은 뺀다 (정답에는 영향 없음)
+  best.seeds=best.seeds.filter(k=>!best.unused.includes(k));
+  best.unused.forEach(k=>best.target.delete(k));best.unused=[];
+  return best;
+}
+//LOGIC-END
+//ANALYZE-START (tools/analyze.js와 같은 내용. 직접 고치지 말고 node tools/sync-analyze.cjs로 맞춘다)
+// 문제 분석. fills: 주어진 블럭으로 목표 그림을 빈틈없이 채우는 방법의 수 (쏠 수 있는지는 따지지 않음).
+// sols: 그 가운데 실제로 쏴서 만들 수 있는 방법의 수 = 해답 수. 쏘는 순서만 다른 것은 같은 것으로 센다.
+// fits: 블럭 하나가 그림 안에 들어갈 수 있는 자리의 수 (블럭 종류별로 세어 더함). edges: 그림 칸끼리 맞닿은 변의 수 (뭉친 정도).
+// 판 밖으로 삐져나오지 않는 문제에만 쓴다.
+function analyze(p,cap=2000,lite=false){ // lite: 종합 점수에 필요한 것만 계산
+  G=p.size;
+  const id=(x,y)=>x+y*G,seeds=new Set(p.seeds.map(k=>{const [x,y]=k.split(',').map(Number);return id(x,y);}));
+  const need=new Set();p.target.forEach(k=>{const [x,y]=k.split(',').map(Number);if(!seeds.has(id(x,y)))need.add(id(x,y));});
+  const order=[...need].sort((a,b)=>a-b),types=[...new Set(p.steps.map(b=>b.type))];
+  const left=types.map(t=>p.steps.filter(b=>b.type===t).length);
+  const orients=types.map(t=>{const seen=new Map();let c=norm(p.steps.find(b=>b.type===t).base);
+    for(let r=0;r<4;r++){c=rot(c);seen.set(JSON.stringify([...c].sort((a,b)=>a[0]-b[0]||a[1]-b[1])),c);}return [...seen.values()];});
+  const dirs=Object.values(DIRS);
+  let fits=0,edges=0;const cands=[];
+  types.forEach((t,ti)=>{const seen=new Set();
+    for(const sh of orients[ti])for(const c of order){const cx=c%G,cy=(c-cx)/G;
+      for(const [ax,ay] of sh){const cells=sh.map(([x,y])=>[x-ax+cx,y-ay+cy]);
+        if(cells.every(([x,y])=>inBoard(x,y)&&need.has(id(x,y)))){const ids=cells.map(([x,y])=>id(x,y)).sort((a,b)=>a-b),k=ids.join();if(!seen.has(k)){seen.add(k);cands.push({t:ti,cells,ids});}}}}
+    fits+=seen.size;});
+  p.target.forEach(k=>{const [x,y]=k.split(',').map(Number);if(p.target.has(key(x+1,y)))edges++;if(p.target.has(key(x,y+1)))edges++;});
+  // 이 블럭을 지금 판(occ)에 쏴서 이 자리에 세울 수 있는가: 어느 한 변에서 오는 길이 비어 있고, 바로 앞이 막혀 있어야 한다
+  const canShoot=(cells,occ)=>dirs.some(([dx,dy])=>
+    cells.some(([x,y])=>inBoard(x+dx,y+dy)&&occ.has(id(x+dx,y+dy)))&&
+    cells.every(([x,y])=>{for(let a=x-dx,b=y-dy;inBoard(a,b);a-=dx,b-=dy)if(occ.has(id(a,b)))return false;return true;}));
+  const reachable=til=>{
+    const m=til.length,memo=new Uint8Array(1<<m);
+    const go=mask=>{
+      if(mask===(1<<m)-1)return true;if(memo[mask])return memo[mask]===1;
+      const occ=new Set(seeds);til.forEach((c,i)=>{if(mask>>i&1)c.forEach(([x,y])=>occ.add(id(x,y)));});
+      for(let i=0;i<m;i++)if(!(mask>>i&1)&&canShoot(til[i],occ)&&go(mask|1<<i)){memo[mask]=1;return true;}
+      memo[mask]=2;return false;
+    };
+    return go(0);
+  };
+  let fills=0,sols=0;const cov=new Set(),til=[];
+  (function fill(){
+    if(fills>=cap)return;
+    const first=order.find(c=>!cov.has(c));
+    if(first===undefined){fills++;if(reachable(til))sols++;return;}
+    const fx=first%G,fy=(first-fx)/G;
+    for(let t=0;t<types.length;t++){
+      if(!left[t])continue;
+      for(const sh of orients[t])for(const [ax,ay] of sh){
+        const cells=sh.map(([x,y])=>[x-ax+fx,y-ay+fy]);
+        if(!cells.every(([x,y])=>inBoard(x,y)&&need.has(id(x,y))&&!cov.has(id(x,y))))continue;
+        cells.forEach(([x,y])=>cov.add(id(x,y)));left[t]--;til.push(cells);
+        fill();
+        til.pop();left[t]++;cells.forEach(([x,y])=>cov.delete(id(x,y)));
+      }
+    }
+  })();
+  // 가상 플레이어: 그림 안에 맞고 지금 쏠 수 있는 자리 가운데 아무 데나 놓고, 더 놓을 곳이 없으면 한 수 물린다.
+  // walk = 이렇게 풀 때 완성까지 물리게 되는 수의 평균(기댓값). 모의 실험 없이 정확히 계산한다.
+  //   막힌 상태의 비용 = 그 아래를 전부 놓아 보고 물리는 수. 풀리는 상태의 비용 = 풀리는 길을 고르기 전에 빠지는 막힌 길들의 평균 비용 + 고른 길의 비용.
+  const m=p.steps.length,memo=new Map(),occ=new Set(seeds),used=[];let states=0,over=false;
+  const go=()=>{
+    const k=used.join();let r=memo.get(k);if(r)return r;
+    if(++states>40000){over=true;return [false,0];}
+    if(used.length===m)r=[true,0];
+    else{
+      let dead=0,live=0,nLive=0;
+      for(let i=0;i<cands.length;i++){
+        const c=cands[i];
+        if(!left[c.t]||c.ids.some(q=>occ.has(q))||!canShoot(c.cells,occ))continue;
+        left[c.t]--;c.ids.forEach(q=>occ.add(q));const at=used.findIndex(u=>u>i);used.splice(at<0?used.length:at,0,i);
+        const [lv,cost]=go();
+        used.splice(used.indexOf(i),1);c.ids.forEach(q=>occ.delete(q));left[c.t]++;
+        if(lv){nLive++;live+=cost;}else dead+=1+cost;
+      }
+      r=nLive?[true,dead/(nLive+1)+live/nLive]:[false,dead];
+    }
+    memo.set(k,r);return r;
+  };
+  // 물리는 수는 문제마다 수십 배씩 차이가 나므로, 두 배가 될 때마다 10씩 오르는 눈금으로 바꾼다 (0 = 헤맬 일 없음, 100 = 약 천 번).
+  // 경우가 너무 많아 다 따져 보지 못한 문제는 눈금의 맨 위(185)로 친다.
+  const w=lite?[false,0]:go(),walkRaw=over||!w[0]?null:w[1],walk=walkRaw===null?185:Math.round(10*Math.log2(1+walkRaw));
+  // 추리 플레이어 (디자이너가 푸는 방식): 쏘는 순서가 아니라 "어느 블럭이 어디 들어가는가"를 따진다.
+  //  1) 뻔한 자리부터 채운다: 어떤 칸을 덮을 수 있는 방법이 하나뿐이거나, 어떤 블럭이 들어갈 자리가 남은 개수만큼뿐일 때.
+  //  2) 뻔한 자리가 없으면 후보가 가장 적은 칸이나 블럭을 골라 하나씩 넣어 본다 (ㅁ이 들어갈 곳이 셋뿐이면 그 셋을 본다). 뻔한 자리를 채워 나가다 모순(덮을 수 없는 칸, 들어갈 데 없는 블럭)이 나오면 그 가정은 버린다.
+  // guess = 이렇게 풀 때 버리게 되는 가정의 수의 평균. 0이면 뻔한 자리만 따라가면 풀리는 문제.
+  // depth = 가정 안에서 또 가정을 해야 하는 깊이의 최댓값.
+  const cover=new Map();cands.forEach((c,i)=>c.ids.forEach(q=>{if(!cover.has(q))cover.set(q,[]);cover.get(q).push(i);}));
+  const byType=types.map((_,t)=>cands.map((c,i)=>c.t===t?i:-1).filter(i=>i>=0)),done=new Set();
+  const active=i=>left[cands[i].t]>0&&cands[i].ids.every(q=>!done.has(q));
+  const put=i=>{cands[i].ids.forEach(q=>done.add(q));left[cands[i].t]--;},unput=i=>{cands[i].ids.forEach(q=>done.delete(q));left[cands[i].t]++;};
+  // ---- 가상 플레이어 10명 ----
+  // 사람마다 "보자마자 뻔하다"고 느끼는 것과 따져 보는 순서가 다르므로, 성격이 다른 플레이어 10명이 같은 문제를 푼다.
+  //  see: 뻔한 자리를 얼마나 잘 보는가. 그 블럭 자리가 남은 그림과 맞닿은 변이 see개 이하일 때만 한눈에 알아본다.
+  //       9 = 가능성이 하나뿐이면 전부 본다. 4 = 가장자리에 걸친 것까지 본다. 2 = 확실히 튀어나오거나 동떨어진 것만 본다.
+  //  ask: 뻔한 자리가 없을 때 무엇을 따지는가. best = 가장 빨리 풀리는 질문, cell = 가장 좁은 칸, block = 자리가 가장 적은 블럭, any = 아무 질문이나.
+  //  holes: 남은 빈 곳이 블럭 크기로 안 나누어떨어지게 끊긴 것을 바로 알아채는가.
+  // 모두 모의 실험이 아니라 평균을 정확히 계산하므로 같은 문제는 항상 같은 값이 나온다.
+  const PLAYERS=[
+    {see:9,ask:'best',holes:1},{see:9,ask:'cell',holes:1},{see:9,ask:'block',holes:1},{see:9,ask:'any',holes:1},
+    {see:4,ask:'best',holes:1},{see:4,ask:'block',holes:1},{see:4,ask:'any',holes:1},
+    {see:2,ask:'best',holes:1},{see:2,ask:'block',holes:0},{see:2,ask:'any',holes:0}
+  ];
+  // 블럭 크기가 모두 같을 때(테트리스는 4칸), 아직 안 덮인 칸들이 이어진 덩어리마다 칸 수가 그 크기의 배수여야 한다
+  const unit=p.steps.every(b=>b.cells.length===p.steps[0].cells.length)?p.steps[0].cells.length:0;
+  const holes=()=>{
+    const seenC=new Set();
+    for(const q of order){
+      if(done.has(q)||seenC.has(q))continue;
+      let n=0;const st=[q];seenC.add(q);
+      while(st.length){const c=st.pop(),x=c%G,y=(c-x)/G;n++;
+        for(const [dx,dy] of dirs){const a=x+dx,b=y+dy;if(!inBoard(a,b))continue;const k=id(a,b);if(need.has(k)&&!done.has(k)&&!seenC.has(k)){seenC.add(k);st.push(k);}}}
+      if(n%unit)return true;
+    }
+    return false;
+  };
+  // 이 블럭 자리가 남은 그림과 맞닿은 변의 수. 적을수록 튀어나와 있어 눈에 띈다
+  const contacts=ci=>{let n=0;const own=cands[ci].ids;
+    for(const [x,y] of cands[ci].cells)for(const [dx,dy] of dirs){const a=x+dx,b=y+dy;if(!inBoard(a,b))continue;const k=id(a,b);if(need.has(k)&&!done.has(k)&&!own.includes(k))n++;}
+    return n;};
+  const shortest=ls=>ls.reduce((a,b)=>b.length<a.length?b:a);
+  const play=P=>{
+    let nodes=0;const memo=new Map(),sees=ci=>P.see>=9||contacts(ci)<=P.see;
+    const think=()=>{ // [풀리는가, 버린 가정의 비용, 가정의 겹 수]. 판은 들어올 때의 상태로 되돌려 놓는다
+      const k0=[...done].sort((a,b)=>a-b).join()+'|'+left.join();
+      const hit=memo.get(k0);if(hit)return hit;
+      const placed=[];let res;
+      for(;;){
+        if(++nodes>120000){res=[false,0,0];break;}
+        if(P.holes&&unit&&holes()){res=[false,0,0];break;}
+        let dead=false,forced=-1;const cellL=[],typeL=[];
+        for(const q of order){
+          if(done.has(q))continue;
+          const l=(cover.get(q)||[]).filter(active);
+          if(!l.length){dead=true;break;}
+          if(l.length===1&&sees(l[0])){forced=l[0];break;} // 뻔한 자리. 못 알아본 것은 아래에서 따져 볼 질문으로 남는다
+          cellL.push(l);
+        }
+        if(!dead&&forced<0)for(let t=0;t<types.length;t++){ // 블럭 쪽에서 본 뻔한 자리
+          if(!left[t])continue;
+          const l=byType[t].filter(active);
+          if(l.length<left[t]){dead=true;break;}
+          if(l.length===left[t]&&sees(l[0])){forced=l[0];break;}
+          typeL.push(l);
+        }
+        if(dead){res=[false,0,0];break;}
+        if(forced>=0){put(forced);placed.push(forced);continue;}
+        if(!cellL.length){res=[true,0,0];break;} // 다 덮었다
+        const lists=P.ask==='cell'?[shortest(cellL)]:P.ask==='block'?[shortest(typeL.length?typeL:cellL)]:cellL.concat(typeL);
+        // 후보마다 결과를 한 번씩만 구해 두고, 질문(목록)마다 비용을 낸다
+        const out=new Map(),get=c=>{let r=out.get(c);if(!r){put(c);r=think();unput(c);out.set(c,r);}return r;};
+        const tried=new Set(),costs=[];
+        for(const l of lists){
+          const sig=l.join();if(tried.has(sig))continue;tried.add(sig);
+          let bad=0,good=0,nGood=0,dep=0;
+          for(const c of l){const r=get(c);if(r[0]){nGood++;good+=r[1];}else bad+=1+r[1];if(r[2]>dep)dep=r[2];}
+          costs.push(nGood?[true,bad/(nGood+1)+good/nGood,dep+1]:[false,bad,dep+1]);
+        }
+        const live=costs.some(c=>c[0]),pool=costs.filter(c=>c[0]===live); // 풀리는 상태라면 어떤 질문을 골라도 풀린다
+        res=P.ask==='any'?[live,pool.reduce((t,c)=>t+c[1],0)/pool.length,Math.max(...pool.map(c=>c[2]))] // 아무 질문이나: 평균
+                         :pool.reduce((a,b)=>b[1]<a[1]?b:a);                                             // 그 밖에는 가장 싼 질문
+        break;
+      }
+      placed.reverse().forEach(unput);memo.set(k0,res);return res;
+    };
+    const r=think();
+    return r[0]&&nodes<=120000?{raw:r[1],depth:r[2]}:null;
+  };
+  // 값은 버린 가정의 수 x 10. 0 = 뻔한 자리만으로 풀림, 10 = 가정 하나를 버림. 다 따지지 못한 플레이어는 300으로 적고, 평균을 낼 때는 100으로 친다.
+  const runs=(lite?PLAYERS.slice(0,1):PLAYERS).map(play),pv=runs.map(r=>r?Math.round(r.raw*10):300);
+  const guess=pv[0],guessRaw=runs[0]?runs[0].raw:null,depthMax=runs[0]?runs[0].depth:9; // 1번 플레이어(가장 꼼꼼하고 가장 잘 고르는 사람)가 예전의 추리 플레이어
+  const capped=pv.map(v=>Math.min(v,100)),pm=Math.round(capped.reduce((a,b)=>a+b,0)/capped.length),ps=Math.max(...capped)-Math.min(...capped);
+  // 종합 점수: 설정이 달라도 한 줄로 견줄 수 있는 값. 블럭 구성 + 1번 플레이어가 버리는 가정.
+  // 블럭마다 ㅁ 4, I 6, T 10, S와 L 12 (거울상 포함). 4칸이 아닌 블럭은 칸당 3점. 블럭 종류 하나마다 4점을 더한다.
+  const BW={O:4,I:6,T:10,S:12,"S'":12,L:12,"L'":12};
+  const blocks=p.steps.reduce((t,b)=>t+(b.cells.length===4&&BW[b.type.slice(1)]||3*b.cells.length),0)+4*types.length;
+  // 버리는 가정 하나 = 20점. 디자이너가 다시 풀고 고친 15문제의 난이도와 순위 일치 0.92 (추리만 0.81, 블럭만 0.58, 10명 평균을 써도 0.90으로 비슷).
+  const score=blocks+2*Math.min(guess,100);
+  return {fills,sols,fits,edges,walk,walkRaw,guess,guessRaw,depth:depthMax,pv,pm,ps,blocks,score};
+}
+//ANALYZE-END
+</script>
+<script>
+const W=660,MAX_FIXED={7:1,9:2,10:2,11:3};
+let SLOT_W=108,SLOT_H=96,TC=16,PER_ROW=6,tapStart=null;
+const narrow=()=>innerWidth<720; // 폰: 블럭 받침대를 크게, 판 바깥 여백은 좁게
+let OFF=5,S=34,N=19,TS=20,boardH=0,TOP=0; // TOP: 폰에서 판 위쪽에 더 두는 여백(픽셀)
+const cv=document.getElementById('c'),x=cv.getContext('2d');
+const tv=document.getElementById('t'),tx=tv.getContext('2d');
+const $=id=>document.getElementById(id);
+let puzzle,occ,hist=[],placed=[],inv,sel=-1,drag=null,tapBlock=null,shake=null,won=false,solving=false,nextTimer=0,undoCount=0;
+let restarts=0,solved=false; // solved: 이 문제에서 정답 보기를 눌렀는지
+function grade(){
+  if(solved)return 'CLEAR!'; // 정답을 본 문제는 직접 다시 풀어도 CLEAR!
+  if(restarts===0&&undoCount===0)return 'PERFECT';
+  if(restarts===0&&undoCount<=2)return 'GREAT';
+  if(restarts<=1&&undoCount<=5)return 'GOOD';
+  return 'CLEAR!';
+}
+
+function overhang(){return $('oh').checked;}
+function fillFixed(){
+  const max=MAX_FIXED[$('size').value],def=1; // 기본은 항상 가운데 고정 칸 하나
+  $('seeds').innerHTML=Array.from({length:max},(_,i)=>`<option${i+1===def?' selected':''}>${i+1}`).join('');
+}
+function newPuzzle(given){ // given: 밖에서 건네받은 문제. 버튼으로 불리면 이벤트가 들어오므로 steps가 있는지로 구별한다
+  clearTimeout(nextTimer);won=false;hist=[];placed=[];undoCount=0;restarts=0;solved=false;$('next').hidden=true;
+  if(given&&given.steps){puzzle=given;G=given.size;}
+  else{
+    const seen=new Set(loadSaved().map(v=>v.id)); // 이미 분류해 저장한 문제는 다시 내지 않는다
+    if(level!==null)puzzle=genLevel(level,seen);
+    else for(let i=0;i<20;i++){
+      puzzle=generate($('kind').value,+$('n').value,overhang(),+$('size').value,+$('seeds').value,$('ord').checked);
+      if(!seen.has(puzzleId(puzzle)))break;
+    }
+  }
+  scoreNote();
+  const maxLen=KINDS[puzzle.kind].max;
+  const m=narrow();
+  PER_ROW=m?4:6;SLOT_W=m?165:108;SLOT_H=m?150:96;TC=m?(maxLen>5?24:26):16;
+  OFF=m?maxLen:maxLen+1;N=G+2*OFF;S=Math.floor(W/N);TOP=m?3*S:0;boardH=S*N+TOP; // 폰: 대기 블럭을 테두리에 붙이므로 여백은 블럭 길이만큼
+  TS=Math.floor(264/(G+6));tv.width=tv.height=TS*(G+6);
+  cv.width=W;cv.height=boardH+8+Math.ceil(puzzle.steps.length/PER_ROW)*SLOT_H;
+  $('bar').style.right='calc('+((W-S*N)/W*100).toFixed(3)+'% + '+(m?4:7)+'px)';
+  restart();$('favBox').hidden=true;refreshFav();showTut();
+}
+function restart(){
+  if(hist.length)restarts++; // 무언가 한 뒤의 다시하기만 센다
+  occ=newOcc(puzzle.seeds);hist=[];placed=[];drag=null;tapBlock=null;shake=null;
+  inv=puzzle.steps.map(s=>({type:s.type,color:s.color,shape:s.base,used:false})).sort((a,b)=>a.type<b.type?-1:1); // 이름이 칸 수로 시작하므로 작은 블럭부터 나열된다
+  sel=0;$('msg').textContent='';drawTarget();draw();
+}
+// 떨어뜨리기 문제에서 서로 붙은 같은 블럭의 맞닿은 변들 [x,y,dx,dy]
+function clashes(){
+  if(!KINDS[puzzle.kind].apart)return [];
+  const own=new Map(),out=[];placed.forEach(p=>p.cells.forEach(([cx,cy])=>own.set(key(cx,cy),p)));
+  placed.forEach(p=>p.cells.forEach(([cx,cy])=>{for(const [dx,dy] of [[1,0],[0,1]]){const q=own.get(key(cx+dx,cy+dy));if(q&&q!==p&&inv[q.i].type===inv[p.i].type)out.push([cx,cy,dx,dy]);}}));
+  return out;
+}
+function setBlock(p,on){
+  p.cells.forEach(([cx,cy])=>on?occ.set(key(cx,cy),inv[p.i].color):occ.delete(key(cx,cy)));
+  inv[p.i].used=on;
+}
+function place(cells,i,shot){ // shot: 어떤 모양을 어느 변, 어느 줄에서 쐈는지
+  const p={cells,i,shape:shot.shape,side:shot.side,off:shot.off};
+  setBlock(p,true);placed.push(p);hist.push({t:'place',p});
+  const done=sameSet(occ,puzzle.target),bad=clashes().length>0;
+  $('msg').textContent=done?(bad?'같은 블럭이 붙었습니다':solving?'Answer':''):(inv.every(v=>v.used)?'그림이 다릅니다':'');
+  $('msg').style.color=solving?'#2563eb':'';
+  sel=inv.findIndex(v=>!v.used);
+  if(puzzle.tut!==undefined&&!done&&inv.every(v=>v.used))$('tutText').textContent=puzzle.tut<TUT_PULL?'그림과 다릅니다. 오른쪽 위의 되돌리기를 눌러 다시 해 보세요.'
+    :puzzle.tut===TUT_PULL?TUT[TUT_PULL].text:'그림과 다릅니다. 잘못 놓은 블럭을 터치해서 빼고 다시 쏴보세요.';
+  // 완성하면 판 위에 띄우고 잠시 뒤 새 문제로
+  if(done&&!bad&&!solving){
+    won=true;award();
+    if(puzzle.tut!==undefined)nextTimer=setTimeout(tutNext,1300);
+    else if($('autoNext').checked&&$('favBox').hidden&&!puzzle.linked&&!solved)nextTimer=setTimeout(newPuzzle,2200);
+    else $('next').hidden=false; // 자동 넘김을 껐거나, 하트 창이 열려 있거나, 난이도 도구에서 연 문제면 버튼으로 넘어간다
+  }
+  draw();
+}
+function undo(){
+  if(won)return;const h=hist.pop();if(!h)return;undoCount++;
+  if(h.t==='place'){placed.splice(placed.indexOf(h.p),1);setBlock(h.p,false);sel=h.p.i;}
+  else{placed.splice(h.idx,0,h.p);setBlock(h.p,true);sel=inv.findIndex(v=>!v.used);} // 빼기를 되돌리면 블럭이 제자리로
+  $('msg').textContent='';if(puzzle.tut!==undefined)$('tutText').textContent=TUT[puzzle.tut].text;draw();
+}
+// 이 블럭에 기대고 있는 블럭들: 이 블럭이 없었다면 다른 자리에 멈췄을(또는 그냥 지나갔을) 블럭.
+// 기대는 블럭이 하나도 없으면, 이 블럭을 빼도 남은 판은 처음부터 쏴서 만들 수 있는 상태이므로 공중에 뜨는 블럭이 생기지 않는다.
+function leaners(p){
+  const out=[],o=newOcc(puzzle.seeds);
+  for(const q of placed){
+    if(q===p)continue;
+    const c=shoot(q.shape,q.side,q.off,o,overhang());
+    if(!c||JSON.stringify(c)!==JSON.stringify(q.cells))out.push(q);
+    q.cells.forEach(([cx,cy])=>o.set(key(cx,cy),1)); // 뒤 블럭 판정은 원래 자리 기준
+  }
+  return out;
+}
+function canRemove(p){return leaners(p).length===0;}
+function removeBlock(p){
+  const lean=leaners(p);
+  if(lean.length){ // 못 빼면 살짝 흔들고, 기대고 있는 블럭을 반짝여서 이유를 보여준다
+    const ks=b=>b.cells.map(([cx,cy])=>key(cx,cy));
+    shake={keys:new Set(ks(p)),lean:new Set(lean.flatMap(ks)),t0:performance.now()};requestAnimationFrame(shakeStep);return;
+  }
+  const idx=placed.indexOf(p);placed.splice(idx,1);setBlock(p,false);hist.push({t:'remove',p,idx});
+  undoCount++;sel=p.i;$('msg').textContent='';draw();
+}
+function shakeStep(){
+  if(!shake)return;
+  if(performance.now()-shake.t0>520){shake=null;draw();return;}
+  draw();requestAnimationFrame(shakeStep);
+}
+function shakeDx(k){const t=shake?performance.now()-shake.t0:0;return shake&&t<340&&shake.keys.has(k)?Math.sin(t/26)*5/S:0;}
+function blockAt(p){
+  const cx=Math.floor(p.x/S)-OFF,cy=Math.floor((p.y-TOP)/S)-OFF;
+  return placed.find(q=>q.cells.some(c=>c[0]===cx&&c[1]===cy));
+}
+function solve(){
+  restart();solving=solved=true;$('next').hidden=false;
+  puzzle.steps.forEach(s=>{const i=inv.findIndex(v=>!v.used&&v.type===s.type);place(shoot(s.shape,s.side,s.off,occ,overhang()),i,s);});
+  solving=false;
+}
+function turn(f){if(sel<0||inv[sel].used)return;inv[sel].shape=f(inv[sel].shape);draw();}
+
+let aimSide=null; // 끄는 동안 조준하고 있는 변
+// 조준: 포인터 위치에서 가장 가까운 테두리와 줄
+function aimAt(p){
+  const shape=inv[sel].shape,mx=Math.floor(p.x/S)-OFF,my=Math.floor((p.y-TOP)/S)-OFF;
+  const o={top:-my,bottom:my-(G-1),left:-mx,right:mx-(G-1)};
+  const best=Object.keys(o).reduce((a,b)=>o[b]>o[a]?b:a);
+  if(!aimSide||o[best]>o[aimSide])aimSide=best; // 두 변이 똑같이 가까우면 지금까지 조준하던 방향을 유지한다
+  const side=aimSide,[dx,dy]=DIRS[side],vert=dx===0;
+  const w=1+Math.max(...shape.map(q=>q[0])),h=1+Math.max(...shape.map(q=>q[1]));
+  const [lo,hi]=laneRange(shape,side,overhang());
+  const off=Math.max(lo,Math.min(hi,(vert?mx:my)-Math.floor(((vert?w:h)-1)/2)));
+  // 시작 위치: PC는 테두리에서 한 칸 띄우고, 폰은 테두리에 붙인다
+  const g=narrow()?0:1;
+  const start=shape.map(([sx,sy])=>vert?[sx+off,dy>0?sy-h-g:sy+G+g]:[dx>0?sx-w-g:sx+G+g,sy+off]);
+  return {side,dx,dy,off,start,land:shoot(shape,side,off,occ,overhang())};
+}
+function slotRect(i){return {x:(W-PER_ROW*SLOT_W)/2+(i%PER_ROW)*SLOT_W,y:boardH+8+Math.floor(i/PER_ROW)*SLOT_H};}
+function pos(e){const r=cv.getBoundingClientRect(),k=cv.width/r.width;return {x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k};} // 화면에 맞게 줄어든 캔버스 보정
+cv.onpointerdown=e=>{
+  if(won||e.button!==0)return;const p=pos(e);
+  if(p.y>=boardH){
+    const i=inv.findIndex((it,k)=>{const r=slotRect(k);return !it.used&&p.x>=r.x&&p.x<r.x+SLOT_W&&p.y>=r.y&&p.y<r.y+SLOT_H;});
+    if(i<0)return;sel=i;
+  }else{
+    const b=blockAt(p); // 판 위의 블럭을 누르면 빼기 시도
+    if(b){tapBlock={b,p};cv.setPointerCapture(e.pointerId);return;}
+    if(sel<0||inv[sel].used)return;
+  }
+  aimSide=null;drag=p;tapStart=e.pointerType!=='mouse'&&p.y>=boardH?p:null;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';draw();
+};
+function slotAt(p){return inv.findIndex((it,k)=>{const r=slotRect(k);return !it.used&&p.x>=r.x&&p.x<r.x+SLOT_W&&p.y>=r.y&&p.y<r.y+SLOT_H;});}
+// 우클릭: 받침대의 블럭 위면 그 블럭을, 끄는 중이거나 판 위면 선택된 블럭을 회전
+cv.addEventListener('mousedown',e=>{
+  if(e.button!==2)return;
+  if(!drag&&!won){const q=pos(e),b=q.y<boardH?blockAt(q):null;if(b){removeBlock(b);return;}} // 판 위의 블럭이면 빼기
+  if(!drag){const i=slotAt(pos(e));if(i>=0)sel=i;}
+  turn(rot);
+});
+cv.oncontextmenu=e=>e.preventDefault();
+cv.onpointermove=e=>{if(drag){drag=pos(e);draw();}};
+cv.onpointerup=e=>{
+  if(tapBlock){
+    const t=tapBlock,q=pos(e);tapBlock=null;
+    if(Math.hypot(q.x-t.p.x,q.y-t.p.y)<24&&blockAt(q)===t.b)removeBlock(t.b);
+    return;
+  }
+  if(!drag)return;const p=pos(e);drag=null;cv.style.cursor='grab';
+  if(p.y<boardH&&p.y>=0&&p.x>=0&&p.x<W){
+    const a=aimAt(p);
+    if(a.land){place(a.land,sel,{shape:inv[sel].shape,side:a.side,off:a.off});return;}
+  }
+  // 터치: 받침대의 블럭을 움직이지 않고 톡 누르면 회전
+  if(tapStart&&p.y>=boardH&&Math.hypot(p.x-tapStart.x,p.y-tapStart.y)<20)turn(rot);
+  draw();
+};
+$('optBtn').onclick=()=>$('opts').scrollIntoView({behavior:'smooth',block:'start'});
+$('devBtn').onclick=()=>{const open=$('dev').hidden;$('dev').hidden=!open;$('devBtn').setAttribute('aria-expanded',open);if(open)$('dev').scrollIntoView({behavior:'smooth',block:'nearest'});};
+// ---- 하트: 지금 문제를 하, 중, 상 가운데 하나로 표시해 이 기기에 저장한다 ----
+const SAVE_KEY='bs_saved';
+function loadSaved(){try{return JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){return [];}}
+function puzzleId(p){return p.size+'|'+p.seeds.join(' ')+'|'+[...p.target].sort().join(' ')+'|'+p.steps.map(b=>b.type).sort().join(' ');}
+function refreshFav(){
+  const list=loadSaved(),f=list.find(v=>v.id===puzzleId(puzzle)),lv=f?(f.top?5:f.mh?3:f.ml?1:[0,2,4][f.level]):-1; // 0 하, 1 중하, 2 중, 3 중상, 4 상, 5 최상
+  const sort=$('favOn').checked; // 분류용인가
+  $('fav').classList.toggle('on',sort?lv>=0:loadFavs().some(v=>v.id===puzzleId(puzzle)));$('unfav').hidden=lv<0;
+  $('fav').hidden=puzzle.tut!==undefined;if($('fav').hidden||!sort)$('favBox').hidden=true;
+  $('favLv').hidden=lv<0||$('fav').hidden||!sort;if(lv>=0){$('favLv').textContent=['하','중하','중','중상','상','최상'][lv];$('favLv').style.background=['#2f9e63','#8fae2a','#d99a1c','#e8730c','#d6453d','#8b1e3f'][lv];}
+  [0,1,2,3,4,5].forEach(i=>$('lv'+i).setAttribute('aria-pressed',lv===i));
+  $('favCount').textContent=list.length;
+}
+function setFav(level){ // level: 0 하, 1 중하, 2 중, 3 중상, 4 상, 5 최상, -1 저장 취소
+  const id=puzzleId(puzzle),list=loadSaved().filter(v=>v.id!==id);
+  if(level>=0)list.push({id,level:[0,1,1,1,2,2][level],ml:level===1,mh:level===3,top:level===5,at:Date.now(),kind:puzzle.kind,size:puzzle.size,seeds:puzzle.seeds,target:[...puzzle.target],steps:puzzle.steps,
+    oh:overhang(),undo:undoCount,restarts,answer:solved,done:won}); // 저장할 때의 플레이 기록도 함께
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(list));}catch(e){$('msg').textContent='저장하지 못했습니다';}
+  $('favBox').hidden=true;$('fav').setAttribute('aria-expanded',false);refreshFav();
+}
+$('favLv').onclick=()=>$('fav').click();
+$('rankBtn').onclick=()=>{
+  if(!narrow()){const r=$('record');r.scrollIntoView({behavior:'smooth',block:'nearest'});r.classList.remove('flash');void r.offsetWidth;r.classList.add('flash');return;}
+  const open=$('rankBox').hidden;$('rankBox').hidden=!open;$('rankBtn').setAttribute('aria-expanded',open);
+};
+document.addEventListener('pointerdown',e=>{if(!$('rankBox').hidden&&!e.target.closest('#rankBox,#rankBtn')){$('rankBox').hidden=true;$('rankBtn').setAttribute('aria-expanded',false);}}); // 바깥을 누르면 닫힌다
+$('fav').onclick=()=>{
+  if(!$('favOn').checked){toggleFav();return;}
+  const open=$('favBox').hidden;$('favBox').hidden=!open;$('fav').setAttribute('aria-expanded',open);
+  if(open&&won){clearTimeout(nextTimer);$('next').hidden=false;} // 고르는 동안 다음 문제로 넘어가지 않게
+};
+[0,1,2,3,4,5].forEach(i=>$('lv'+i).onclick=()=>setFav(i));$('unfav').onclick=()=>setFav(-1);
+$('favCopy').onclick=()=>{
+  const t=$('favText');t.value=JSON.stringify(loadSaved());t.hidden=false;t.focus();t.select();
+  try{navigator.clipboard.writeText(t.value).catch(()=>{});}catch(e){}
+};
+$('toGame').onclick=()=>$('game').scrollIntoView({behavior:'smooth',block:'start'});
+$('undo').onclick=undo;$('reset').onclick=()=>{restart();if(puzzle.tut!==undefined)$('tutText').textContent=TUT[puzzle.tut].text;};$('new').onclick=$('next').onclick=newPuzzle;$('sol').onclick=solve;
+$('size').onchange=()=>{fillPreset(+$('size').value);fillFixed();newPuzzle();}; // 판 크기를 바꾸면 블럭 수도 그 크기의 기본값으로
+const PRESET={'4':[9,6],'4x':[9,6],'5':[11,7],'45':[11,7],'all':[9,6]}; // 블럭 종류별 기본 판 크기와 블럭 수
+function fillPreset(size){ // 선택지를 다시 채우고 기본값을 고른다. size를 주면 판 크기는 그대로 두고 블럭 수만 맞춘다
+  const [sz,pn]=PRESET[$('kind').value],now=size||sz,n=now===11?7:pn; // 11x11은 블럭 7개가 기본
+  const opt=(a,d)=>a.map(v=>`<option value="${v}"${v===d?' selected':''}>${v}${v===d?' (default)':''}`).join('');
+  $('size').innerHTML=opt([7,9,10,11],sz);$('size').value=now;$('n').innerHTML=opt([2,3,4,5,6,7,8],n);
+}
+$('kind').onchange=()=>{fillPreset();fillFixed();newPuzzle();};
+['oh','n','seeds','ord'].forEach(id=>$(id).onchange=newPuzzle);
+['ghost','over'].forEach(id=>$(id).onchange=draw);
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+  if(k==='r')turn(rot);else if(k==='z')undo();});
+
+const THEMES=[ // 목표 색 옵션: 판 바탕, 목표 칸, 격자선
+ {name:'회청',board:'#eef1f5',tint:'#b9c4d1',grid:'#9aa3ad'},
+ {name:'모래',board:'#f5f1e8',tint:'#e0d2b4',grid:'#b9ae98'},
+ {name:'하늘',board:'#eef3f8',tint:'#b7d5f2',grid:'#9fb0c2'},
+ {name:'민트',board:'#eef5f1',tint:'#b9e0cf',grid:'#9db3a8'},
+ {name:'라벤더',board:'#f2f0f8',tint:'#d3c9ef',grid:'#aaa5bd'},
+ {name:'살구',board:'#f7f1ee',tint:'#f4cdbb',grid:'#bfaea6'},
+ {name:'노랑',board:'#f5f4ee',tint:'#f2e08e',grid:'#b5b29d'}
+];
+let TH=THEMES[0];
+function block(c,s,off,cx,cy,color,alpha){c.globalAlpha=alpha;c.fillStyle=color;c.fillRect((cx+off)*s+1,(cy+off)*s+1,s-2,s-2);
+  c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.strokeRect((cx+off)*s+2,(cy+off)*s+2,s-4,s-4);c.globalAlpha=1;}
+function board(c,s,off){
+  const n=G+2*off;
+  c.fillStyle='#fff';c.fillRect(0,0,s*n,s*n);
+  c.fillStyle=TH.board;c.fillRect(off*s,off*s,G*s,G*s);
+  c.strokeStyle=TH.grid;c.lineWidth=1;
+  for(let i=0;i<=G;i++){c.beginPath();c.moveTo((off+i)*s,off*s);c.lineTo((off+i)*s,(off+G)*s);c.moveTo(off*s,(off+i)*s);c.lineTo((off+G)*s,(off+i)*s);c.stroke();}
+  c.strokeStyle='#222';c.lineWidth=s>30?3:2;c.strokeRect(off*s,off*s,G*s,G*s);
+}
+function xy(k){return k.split(',').map(Number);}
+function drawTarget(){
+  board(tx,TS,3);
+  puzzle.target.forEach(k=>{const [cx,cy]=xy(k);block(tx,TS,3,cx,cy,puzzle.seeds.includes(k)?SEED:'#7a8591',1);});
+}
+function small(shape,color,cx,cy,alpha){ // 받침대용 작은 블럭, (cx,cy)가 중심
+  const w=1+Math.max(...shape.map(q=>q[0])),h=1+Math.max(...shape.map(q=>q[1]));
+  x.globalAlpha=alpha;
+  shape.forEach(([sx,sy])=>{const a=cx-w*TC/2+sx*TC,b=cy-h*TC/2+sy*TC;x.fillStyle=color;x.fillRect(a+1,b+1,TC-2,TC-2);
+    x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1.5;x.strokeRect(a+1.5,b+1.5,TC-3,TC-3);});
+  x.globalAlpha=1;
+}
+function draw(){
+  drawScene();
+  if(!won)return;
+  x.fillStyle='#1a7f37';x.font='bold '+Math.round(S*1.4)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';
+  x.fillText(puzzle.tut!==undefined?'좋습니다!':grade(),(OFF+G/2)*S,TOP+(OFF-1.4)*S);
+}
+function drawScene(){
+  x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);
+  x.save();x.translate(0,TOP); // 판은 위 여백만큼 내려 그린다
+  board(x,S,OFF);
+  // 버튼 줄: 테마 색 띠와 그 아래의 선. 높이는 화면에 보이는 버튼 크기에 맞춘다
+  const kpx=cv.width/(cv.getBoundingClientRect().width||cv.width),HB=Math.round((narrow()?44:58)*kpx);
+  x.fillStyle=TH.tint;x.fillRect(0,-TOP,cv.width,HB);
+  x.fillStyle=TH.grid;x.fillRect(0,-TOP+HB-Math.max(2,Math.round(2*kpx)),cv.width,Math.max(2,Math.round(2*kpx)));
+  occ.forEach((color,k)=>{const [cx,cy]=xy(k);block(x,S,OFF,cx+shakeDx(k),cy,color,1);});
+  if(shake&&shake.lean.size){ // 기대고 있는 블럭을 흰빛으로 두 번 반짝임
+    x.fillStyle='rgba(255,255,255,'+(0.7*Math.abs(Math.sin((performance.now()-shake.t0)/520*Math.PI*2))).toFixed(2)+')';
+    shake.lean.forEach(k=>{const [cx,cy]=xy(k);x.fillRect((cx+OFF)*S+1,(cy+OFF)*S+1,S-2,S-2);});
+  }
+  if($('over').checked){
+    // 목표 자리: 한 덩어리의 회청색 그림자
+    x.fillStyle=TH.tint;
+    puzzle.target.forEach(k=>{if(occ.has(k))return;const [cx,cy]=xy(k);x.fillRect((cx+OFF)*S,(cy+OFF)*S,S,S);});
+    // 칸 구분: 색칠 위에 판의 격자선을 그대로 다시 그린다 (선 색과 굵기가 판 전체에서 같게)
+    x.strokeStyle=TH.grid;x.lineWidth=1;x.beginPath();
+    for(let i=1;i<G;i++){x.moveTo((OFF+i)*S,OFF*S);x.lineTo((OFF+i)*S,(OFF+G)*S);x.moveTo(OFF*S,(OFF+i)*S);x.lineTo((OFF+G)*S,(OFF+i)*S);}
+    x.stroke();
+    x.lineWidth=3;x.strokeStyle='#222';x.strokeRect(OFF*S,OFF*S,G*S,G*S); // 색칠에 덮인 판 테두리를 다시 그림
+    x.strokeStyle='#fff';
+    occ.forEach((_,k)=>{if(puzzle.target.has(k))return;const [cx,cy]=xy(k),a=(cx+OFF)*S,b=(cy+OFF)*S;
+      x.beginPath();x.moveTo(a+9,b+9);x.lineTo(a+S-9,b+S-9);x.moveTo(a+S-9,b+9);x.lineTo(a+9,b+S-9);x.stroke();});
+  }
+  // 붙어 버린 같은 블럭: 맞닿은 변을 빨간 선으로
+  x.strokeStyle='#e5383b';x.lineWidth=Math.max(4,S/6);x.lineCap='round';
+  clashes().forEach(([cx,cy,dx,dy])=>{const a=(cx+dx+OFF)*S,b=(cy+dy+OFF)*S;x.beginPath();x.moveTo(a+(dx?0:5),b+(dy?0:5));x.lineTo(a+(dx?0:S-5),b+(dy?0:S-5));x.stroke();});
+  x.lineCap='butt';
+  x.restore();
+  // 받침대: 바탕을 테마 색으로
+  x.fillStyle=TH.tint;x.fillRect(0,boardH,cv.width,cv.height-boardH);
+  x.fillStyle=TH.grid;x.fillRect(0,boardH,cv.width,Math.max(2,Math.round(2*kpx)));
+  inv.forEach((it,i)=>{
+    const r=slotRect(i),hidden=it.used||(i===sel&&drag);
+    x.fillStyle='#fff';x.fillRect(r.x+3,r.y+3,SLOT_W-6,SLOT_H-6);
+    x.strokeStyle=i===sel&&!it.used?'#222':'#ccc';x.lineWidth=i===sel&&!it.used?3:1;x.strokeRect(r.x+3,r.y+3,SLOT_W-6,SLOT_H-6);
+    if(!hidden)small(it.shape,it.color,r.x+SLOT_W/2,r.y+SLOT_H/2,1);
+  });
+  if(!drag){drawGuide();return;}
+  const it=inv[sel];
+  if(drag.y>=boardH){small(it.shape,it.color,drag.x,drag.y,.7);return;}
+  x.save();x.translate(0,TOP);
+  const a=aimAt(drag),show=$('ghost').checked,ok=a.land||!show;
+  a.start.forEach(([cx,cy])=>block(x,S,OFF,cx,cy,ok?it.color:'#bbb',.85));
+  if(a.land&&show)a.land.forEach(([cx,cy])=>block(x,S,OFF,cx,cy,it.color,.35));
+  const n=a.start.length,ax=a.start.reduce((s,q)=>s+q[0],0)/n+.5+OFF,ay=a.start.reduce((s,q)=>s+q[1],0)/n+.5+OFF;
+  x.strokeStyle=x.fillStyle=ok?'#111':'#999';x.lineWidth=4;
+  const bx=(ax+a.dx*1.2)*S,by=(ay+a.dy*1.2)*S,an=Math.atan2(a.dy,a.dx);
+  x.beginPath();x.moveTo(ax*S,ay*S);x.lineTo(bx,by);x.stroke();
+  x.beginPath();x.moveTo(bx+a.dx*8,by+a.dy*8);x.lineTo(bx-14*Math.cos(an-.5),by-14*Math.sin(an-.5));x.lineTo(bx-14*Math.cos(an+.5),by-14*Math.sin(an+.5));x.fill();
+  x.restore();
+}
+// 색 바꾸기: 좌우로 넘기며 판에서 바로 확인하고, 확인을 누르면 이 기기에 기억
+let tIdx=4; // 라벤더
+try{const v=localStorage.getItem('tint');if(v!==null&&THEMES[+v])tIdx=+v;}catch(e){}
+function applyTint(save){TH=THEMES[tIdx];$('tName').textContent=TH.name;if(save)try{localStorage.setItem('tint',tIdx);}catch(e){}if(puzzle){drawTarget();draw();}}
+$('tintBtn').onclick=()=>{$('tintBtn').hidden=true;$('picker').hidden=false;};
+$('tPrev').onclick=()=>{tIdx=(tIdx+THEMES.length-1)%THEMES.length;applyTint(true);};
+$('tNext').onclick=()=>{tIdx=(tIdx+1)%THEMES.length;applyTint(true);};
+$('tOk').onclick=()=>{try{localStorage.setItem('tint',tIdx);}catch(e){}$('picker').hidden=true;$('tintBtn').hidden=false;};
+applyTint();
+fillPreset();fillFixed();
+function linked(){ // 주소의 #p= 뒤에 담긴 문제를 읽는다. 없거나 깨졌으면 null
+  try{
+    if(!location.hash.startsWith('#p='))return null;
+    const p=JSON.parse(decodeURIComponent(location.hash.slice(3)));
+    if(!KINDS[p.kind]||!p.steps||!p.steps.length)return null;
+    p.target=new Set(p.target);p.linked=true;$('autoNext').checked=false;$('kind').value=p.kind; // 난이도 도구에서 연 창은 그 뒤의 문제도 자동으로 넘기지 않는다
+    fillPreset();
+    return p;
+  }catch(e){return null;}
+}
+addEventListener('hashchange',()=>{const p=linked();if(p)newPuzzle(p);});
+// ---- 즐겨찾기: 마음에 든 문제를 이 기기에 모아 두고 다시 푼다 ----
+function loadFavs(){try{return JSON.parse(localStorage.getItem('bs_fav'))||[];}catch(e){return [];}}
+function toggleFav(){
+  const id=puzzleId(puzzle),list=loadFavs(),had=list.some(v=>v.id===id),next=had?list.filter(v=>v.id!==id)
+    :list.concat({id,at:Date.now(),kind:puzzle.kind,size:puzzle.size,core:puzzle.core,seeds:puzzle.seeds,target:[...puzzle.target],steps:puzzle.steps});
+  try{localStorage.setItem('bs_fav',JSON.stringify(next));}catch(e){$('msg').textContent='저장하지 못했습니다';}
+  refreshFav();drawFavs();
+}
+function drawFavs(){
+  const list=loadFavs().sort((a,b)=>b.at-a.at),box=$('favsList');$('favs').hidden=!list.length;$('favsN').textContent=list.length+'개';box.innerHTML='';
+  list.forEach(f=>{
+    const c=document.createElement('canvas'),z=Math.floor(112/f.size);c.width=c.height=z*f.size;c.title='다시 풀기';
+    const k=c.getContext('2d');k.fillStyle=TH.board;k.fillRect(0,0,c.width,c.height);
+    f.target.forEach(q=>{const [cx,cy]=q.split(',').map(Number);k.fillStyle=f.seeds.includes(q)?SEED:'#7a8591';k.fillRect(cx*z+1,cy*z+1,z-2,z-2);});
+    c.onclick=()=>{newPuzzle({...f,target:new Set(f.target),replay:true});$('game').scrollIntoView({behavior:'smooth',block:'start'});}; // 다시 푸는 문제는 점수가 없다
+    box.appendChild(c);
+  });
+}
+// ---- 순위표: 점수 서버(LB_URL)가 정해져 있을 때만 켜진다. 비어 있으면 "준비 중"으로 남는다 ----
+const LB_URL="https://script.google.com/macros/s/AKfycbzR-eSXMlONE1rKQKh0dn1CYMg3zN23sshUzI6OlRyVgQEuPqIYw1gLM7C9ELjvGniD/exec"; // tools/build-site.cjs가 leaderboard/url.txt의 주소로 채운다. 아티팩트 링크에서는 바깥 서버와 통신할 수 없어 비워 둔다
+let nick=null,lbData=null,lbState='',lbBusy=false,lbAgain=false;
+try{nick=localStorage.getItem('bs_nick');}catch(e){}
+async function lb(body){const r=await fetch(LB_URL,{method:'POST',body:JSON.stringify(body)});return r.json();}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function keepStats(rec){try{localStorage.setItem('bs_stats',JSON.stringify({score:rec.score,n:rec.n,p:rec.p,perfect:rec.perfect}));}catch(e){}}
+function rankRow(r,me){return '<div class="rankRow'+(me?' me':'')+'"><i>'+r.rank+'</i><span>'+esc(r.nick)+'</span><b>'+r.score+'점</b><em>PERFECT '+(r.rate===null?'-':r.rate+'%')+'</em></div>';}
+function rankHtml(v,rate){
+  const mine='<div class="rankRow me"><i>-</i><span>'+(nick?esc(nick):'나')+'</span><b>'+v.score+'점</b><em>PERFECT '+rate+'</em></div>';
+  if(!LB_URL)return mine+'<div class="rankSoon">순위표는 준비 중입니다</div>';
+  let h;
+  if(!lbData)h=(nick?mine:'')+'<div class="rankSoon">'+(lbState||'순위표를 불러오는 중입니다')+'</div>';
+  else{
+    const rows=lbData.list.slice(0,10),same=r=>!!nick&&r.nick.toLowerCase()===nick.toLowerCase();
+    h=rows.length?rows.map(r=>rankRow(r,same(r))).join(''):'<div class="rankSoon">아직 아무도 없습니다</div>';
+    if(lbData.me&&lbData.me.rank>rows.length)h+=rankRow(lbData.me,true); // 내가 10등 밖이면 맨 아래에 내 줄
+    if(lbState)h+='<div class="rankSoon">'+lbState+'</div>';
+  }
+  if(!nick)h+=mine; // 닉네임이 없으면 순위에 오르지 않은 내 점수를 따로 보여 준다
+  return h;
+}
+async function lbSync(){ // 내 기록을 올리고 순위표를 받아 온다. 겹쳐 불리면 끝난 뒤 한 번 더 돈다
+  if(!LB_URL)return;
+  if(lbBusy){lbAgain=true;return;}
+  lbBusy=true;
+  try{
+    if(nick){const r=await lb({a:'save',nick,stats:loadStats()});if(r.ok&&r.kept)keepStats(r.rec);} // 서버 기록이 더 높으면 그것을 받아 쓴다
+    const t=await lb({a:'top',nick:nick||''});
+    if(t.ok){lbData=t;lbState='';}else lbState='순위표를 불러오지 못했습니다';
+  }catch(e){lbState='순위표에 연결하지 못했습니다';}
+  lbBusy=false;showStats();
+  if(lbAgain){lbAgain=false;lbSync();}
+}
+function askNick(){$('nickBox').hidden=false;$('nickForm').hidden=false;$('nickAsk').hidden=true;$('nickMsg').textContent='';$('nickIn').value='';setTimeout(()=>$('nickIn').focus(),50);}
+let toastTimer=0;
+function toast(t){const o=$('toast');o.textContent=t;o.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{o.hidden=true;},2800);}
+let nickFound=null; // 서버에 이미 있는 닉네임을 적었을 때 그 기록
+function nickDone(name,back){ // 닉네임이 정해졌다
+  nick=name;try{localStorage.setItem('bs_nick',nick);}catch(e){}
+  $('nickBox').hidden=true;
+  if(back){tutDone();if(puzzle.tut!==undefined)newPuzzle();toast('돌아오신 것을 환영합니다!');} // 돌아온 사람은 튜토리얼을 건너뛴다
+  showStats();lbSync();
+}
+$('nickOk').onclick=async()=>{
+  const name=$('nickIn').value.trim();
+  if(!name||name.length>10){$('nickMsg').textContent='닉네임을 1자에서 10자로 적어 주세요.';return;}
+  $('nickMsg').textContent='확인하는 중입니다.';$('nickOk').disabled=true;
+  try{
+    const r=await lb({a:'get',nick:name});if(!r.ok)throw new Error(r.error);
+    if(r.rec){ // 이미 있는 닉네임: 본인인지 묻는다
+      nickFound=r.rec;$('nickQ').textContent='"'+r.rec.nick+'"은(는) 이미 있는 닉네임입니다.'+String.fromCharCode(10)+'기존 플레이어이신가요?';
+      $('nickForm').hidden=true;$('nickAsk').hidden=false;
+    }else nickDone(name,false);
+  }catch(e){$('nickMsg').textContent='연결하지 못했습니다. 잠시 뒤에 다시 해 주세요.';}
+  $('nickOk').disabled=false;
+};
+$('nickYes').onclick=()=>{ // 기존 플레이어: 기록을 이어 받는다. 이 기기의 점수가 더 높으면 그것을 올린다
+  if(nickFound.score>=loadStats().score)keepStats(nickFound);
+  nickDone(nickFound.nick,true);
+};
+$('nickNew').onclick=async()=>{ // 다른 사람: 뒤에 숫자를 붙인 새 닉네임으로 시작한다
+  $('nickYes').disabled=$('nickNew').disabled=true;
+  try{
+    const r=await lb({a:'free',nick:nickFound.nick});if(!r.ok)throw new Error(r.error);
+    nickDone(r.nick,false);toast('"'+r.nick+'"(으)로 시작합니다.');
+  }catch(e){$('nickForm').hidden=false;$('nickAsk').hidden=true;$('nickMsg').textContent='연결하지 못했습니다. 잠시 뒤에 다시 해 주세요.';}
+  $('nickYes').disabled=$('nickNew').disabled=false;
+};
+$('nickIn').onkeydown=e=>{if(e.key==='Enter')$('nickOk').click();};
+$('nickNo').onclick=()=>{$('nickBox').hidden=true;try{localStorage.setItem('bs_nickAsk','no');}catch(e){}};
+$('nickSet').onclick=askNick;
+// ---- 기록과 점수: 난이도 버튼으로 받은 문제를 풀면 점수가 쌓인다. 하 2점, 중 3점, 상 5점, PERFECT면 1점 더 ----
+const POINTS=[2,3,5];
+function loadStats(){try{const v=JSON.parse(localStorage.getItem('bs_stats'));if(v&&v.n){if(!v.p)v.p=[0,0,0];return v;}}catch(e){}return {score:0,n:[0,0,0],p:[0,0,0],perfect:0};}
+function showStats(pop){
+  const v=loadStats();
+  const total=v.n[0]+v.n[1]+v.n[2],rate=total?Math.round(v.perfect/total*100)+'%':'-';
+  const row=rankHtml(v,rate);
+  $('rankList').innerHTML=row;$('rankBox').innerHTML='<b>순위</b>'+row; // 폰의 작은 창에도 같은 모양으로
+  $('nickSet').hidden=!LB_URL||!!nick;
+}
+function award(){ // 완성했을 때 한 번 불린다
+  if(puzzle.lv===undefined||puzzle.got||solved)return; // 난이도 버튼으로 받은 문제만. 튜토리얼, 직접 설정한 문제, 다시 푸는 즐겨찾기는 점수가 없다
+  const perfect=grade()==='PERFECT',v=loadStats();
+  puzzle.got=POINTS[puzzle.lv]+(perfect?1:0);v.score+=puzzle.got;v.n[puzzle.lv]++;if(perfect){v.perfect++;v.p[puzzle.lv]++;}
+  try{localStorage.setItem('bs_stats',JSON.stringify(v));}catch(e){}
+  showStats(true);lbSync();
+}
+// ---- 난이도 버튼: 종합 점수로 문제를 골라 낸다 (4칸 블럭, 9x9, 고정 칸 1, 순서가 중요한 문제) ----
+// 하 = 63점 이하, 중 = 64~105점, 상 = 106점 이상. n은 그 난이도가 잘 나오는 블럭 수들
+const LEVELS=[{n:[4,5],lo:0,hi:63},{n:[5,6,6,7],lo:64,hi:105},{n:[7,8],lo:106,hi:1e9}];
+let level=0;try{const v=localStorage.getItem('bs_level');if(v!==null)level=v==='x'?null:+v;}catch(e){} // null = 문제 설정에서 직접 고른 상태
+function genLevel(lv,seen){
+  const L=LEVELS[lv];let best=null,gap=1e9;
+  for(let i=0;i<40;i++){
+    const n=L.n[Math.floor(Math.random()*L.n.length)],p=generate('4',n,false,9,1,true);
+    if(p.steps.length!==n||seen.has(puzzleId(p)))continue;
+    const a=analyze(p,2000,true);p.score=a.score;p.blocks=a.blocks;p.guess=a.guess;
+    const d=a.score<L.lo?L.lo-a.score:a.score>L.hi?a.score-L.hi:0;
+    if(d<gap){best=p;gap=d;}
+    if(!d)break;
+  }
+  $('kind').value='4';fillPreset(9);$('n').value=best.steps.length; // 문제 설정 칸도 지금 문제에 맞춰 보여 준다
+  best.lv=lv; // 점수를 줄 때 쓴다
+  return best;
+}
+function scoreNote(){ // 개발자 도구에 지금 문제의 점수를 적는다
+  let t='-';
+  if(puzzle.tut===undefined&&!overhang()){
+    try{if(puzzle.score===undefined){const a=analyze(puzzle,2000,true);puzzle.score=a.score;puzzle.blocks=a.blocks;puzzle.guess=a.guess;}
+      t=puzzle.score+' (블럭 '+puzzle.blocks+' + 추리 '+(puzzle.score-puzzle.blocks)+')';}catch(e){}
+  }
+  $('devScore').textContent=t;
+}
+function setLevel(lv){
+  level=lv;try{localStorage.setItem('bs_level',lv===null?'x':lv);}catch(e){}
+  document.querySelectorAll('#levels button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===lv));
+}
+$('levels').onclick=e=>{const b=e.target.closest('button');if(!b)return;setLevel(+b.dataset.lv);newPuzzle();};
+// 문제 설정이나 생성 옵션을 직접 바꾸면 난이도 선택을 풀고 그 설정대로 낸다. (이 처리가 각 칸의 처리보다 먼저 돈다)
+document.addEventListener('change',e=>{if(['kind','size','n','seeds','oh','ord'].includes(e.target.id))setLevel(null);},true);
+setLevel(level);
+// ---- 튜토리얼: 세 판으로 조작을 익힌다. 글은 폰 기준이고, 컴퓨터 조작은 괄호로 덧붙인다 ----
+const TUT=[
+  {text:'아래의 블럭을 끌어서 판의 가장자리에 놓으세요. 반대편으로 날아가고, 장애물이 있으면 멈춥니다.',steps:[['O','right',4,0]]},
+  {text:'블럭을 터치하면 회전합니다. 그림에 맞게 돌린 다음 쏘세요. (컴퓨터는 우클릭)',steps:[['I','left',3,1]]},
+  {text:'잘못 들어간 블럭은 다시 터치하면 빠집니다. 빼고 다시 쏴보세요.',steps:[['O','top',4,0]],pre:['O','bottom',4,0]},
+  {text:'먼저 쏜 블럭이 있다면, 다음 블럭이 걸려 멈춥니다. 쏘는 순서를 잘 생각하며 플레이하세요!',steps:[['I','left',3,1],['O','left',2,0]]}
+]; // steps: [블럭, 쏘는 변, 줄, 돌린 횟수]. pre: 처음부터 잘못 놓여 있는 블럭
+const TUT_PULL=2; // 빼기를 배우는 판의 번호. 이 판부터는 틀렸을 때 되돌리기 대신 "눌러서 빼기"를 알려 준다
+function tutPuzzle(i){ // 정해 둔 발사대로 실제로 쏴서 문제를 만든다
+  G=9;const seeds=['4,4'],o=newOcc(seeds),steps=[];
+  for(const [name,side,off,r] of TUT[i].steps){
+    let shape=SETS[4][name];for(let k=0;k<r;k++)shape=rot(shape);
+    const cells=shoot(shape,side,off,o,false);cells.forEach(([cx,cy])=>o.set(key(cx,cy),1));
+    steps.push({type:'4'+name,size:4,color:COLORS[4][name],base:SETS[4][name],shape,side,off,cells});
+  }
+  return {kind:'4',size:9,core:1,seeds,unused:[],target:new Set(o.keys()),steps,tut:i,pre:TUT[i].pre};
+}
+function showTut(){ // 지금 문제가 튜토리얼이면 안내 줄을 보이고 손짓을 움직인다
+  const on=puzzle.tut!==undefined;$('tutBar').hidden=!on;
+  if(on&&puzzle.pre&&!placed.length){
+    const [name,side,off,r]=puzzle.pre;let shape=SETS[4][name];for(let k=0;k<r;k++)shape=rot(shape);
+    place(shoot(shape,side,off,occ,false),inv.findIndex(v=>v.type==='4'+name),{shape,side,off});
+  }
+  if(on){$('tutStep').textContent=(puzzle.tut+1)+' / '+TUT.length;$('tutText').textContent=TUT[puzzle.tut].text;if(!tutLoop){tutLoop=true;requestAnimationFrame(tutTick);}}
+}
+let tutLoop=false;
+function tutTick(){if(!puzzle||puzzle.tut===undefined){tutLoop=false;return;}if(!won&&!drag&&!shake)draw();requestAnimationFrame(tutTick);}
+function tutDone(){try{localStorage.setItem('bs_tut','1');}catch(e){}}
+function tutNext(){const n=puzzle.tut+1;if(n<TUT.length)newPuzzle(tutPuzzle(n));else{tutDone();newPuzzle();openGuide();}} // 튜토리얼을 마치면 버튼 설명을 한 번 보여 준다
+const GUIDE=[['optBtn','옵션','난이도와 문제 설정으로 갑니다.'],['rankBtn','순위','내 점수와 순위를 봅니다.'],['fav','즐겨찾기','좋아하는 문제를 담습니다.'],['undo','되돌리기','한 수를 물립니다.'],['reset','다시하기','처음부터 다시 풉니다.']];
+function showGuide(){
+  const o=$('guide'),tags=[];o.innerHTML='';let rows='',low=0,n=0;
+  GUIDE.forEach(([id,name,desc])=>{
+    const el=$(id);if(el.hidden)return;n++;
+    const r=el.getBoundingClientRect(),ring=document.createElement('div');ring.className='gRing'; // 버튼을 그 자리에 밝게 다시 그린다
+    ring.style.cssText='left:'+(r.left-3)+'px;top:'+(r.top-3)+'px;width:'+(r.width+6)+'px;height:'+(r.height+6)+'px';
+    ring.innerHTML=el.innerHTML;o.appendChild(ring);low=Math.max(low,r.bottom);
+    const tag=document.createElement('span');tag.className='gNum';tag.textContent=n;tag.style.cssText='left:'+(r.right-10)+'px;top:'+(r.bottom-10)+'px';tags.push(tag);
+    rows+='<li><b>'+n+'</b><span><strong>'+name+'</strong> '+desc+'</span></li>';
+  });
+  tags.forEach(t=>o.appendChild(t));
+  const box=document.createElement('div');box.className='gBox';box.style.top=(low+30)+'px';
+  box.innerHTML='<ol>'+rows+'</ol><p>'+(narrow()?'난이도는 화면을 아래로 내리면 고를 수 있습니다.':'난이도는 오른쪽에서 고릅니다.')+'</p><p class="gTap">화면을 누르면 닫힙니다.</p>';
+  o.appendChild(box);o.hidden=false;
+}
+function openGuide(){$('game').scrollIntoView({block:'start'});setTimeout(showGuide,80);} // 버튼이 화면에 들어온 뒤에 자리를 잰다
+$('guide').onclick=()=>{$('guide').hidden=true;};
+$('guideBtn').onclick=openGuide;
+$('tutSkip').onclick=()=>{tutDone();newPuzzle();openGuide();};
+$('tutAgain').onclick=()=>{newPuzzle(tutPuzzle(0));$('game').scrollIntoView({behavior:'smooth',block:'start'});};
+const flat=sh=>JSON.stringify(norm(sh).sort((a,b)=>a[0]-b[0]||a[1]-b[1]));
+const ck=c=>JSON.stringify([...c].sort((a,b)=>a[0]-b[0]||a[1]-b[1])); // 칸의 순서와 상관없이 같은 자리인지
+function drawGuide(){ // 다음에 할 일을 손짓으로 보여 준다: 돌려야 하면 블럭 위에서 고리가 퍼지고, 쏠 차례면 점이 가장자리로 움직인다
+  if(puzzle.tut===undefined||won)return;
+  const st=puzzle.steps.find(s=>!placed.some(p=>ck(p.cells)===ck(s.cells)));if(!st)return;
+  const i=inv.findIndex(v=>!v.used&&v.type===st.type);
+  if(i<0){
+    if(puzzle.tut<TUT_PULL)return;
+    const bad=placed.find(p=>!puzzle.steps.some(q=>ck(q.cells)===ck(p.cells)));if(!bad)return;
+    const n=bad.cells.length,bx=(bad.cells.reduce((t,c)=>t+c[0],0)/n+.5+OFF)*S,by=TOP+(bad.cells.reduce((t,c)=>t+c[1],0)/n+.5+OFF)*S,u=(performance.now()%1900)/1900;
+    x.save();x.strokeStyle='rgba(37,99,235,'+(1-u).toFixed(2)+')';x.lineWidth=6;x.beginPath();x.arc(bx,by,16+u*38,0,7);x.stroke();x.restore();
+    return;
+  }
+  const r=slotRect(i),sx=r.x+SLOT_W/2,sy=r.y+SLOT_H/2,t=(performance.now()%1900)/1900;
+  x.save();
+  if(flat(inv[i].shape)!==flat(st.shape)){
+    x.strokeStyle='rgba(37,99,235,'+(1-t).toFixed(2)+')';x.lineWidth=6;x.beginPath();x.arc(sx,sy,16+t*38,0,7);x.stroke();
+  }else{
+    const w=1+Math.max(...st.shape.map(q=>q[0])),h=1+Math.max(...st.shape.map(q=>q[1])),vert=DIRS[st.side][0]===0;
+    const tx=vert?(OFF+st.off+w/2)*S:(st.side==='left'?OFF-1:OFF+G+1)*S,ty=TOP+(vert?(st.side==='top'?OFF-1:OFF+G+1):OFF+st.off+h/2)*S;
+    const e=Math.min(1,t/.7),px=sx+(tx-sx)*e,py=sy+(ty-sy)*e;
+    x.strokeStyle='rgba(37,99,235,.45)';x.lineWidth=4;x.setLineDash([10,10]);x.beginPath();x.moveTo(sx,sy);x.lineTo(tx,ty);x.stroke();x.setLineDash([]);
+    x.fillStyle='rgba(37,99,235,.85)';x.beginPath();x.arc(px,py,17,0,7);x.fill();
+    x.strokeStyle='#fff';x.lineWidth=4;x.beginPath();x.arc(px,py,17,0,7);x.stroke();
+  }
+  x.restore();
+}
+// 하트는 컴퓨터에서 파일로 열었을 때만 처음부터 켜 둔다 (링크로 받은 사람에게는 꺼져 있다)
+$('favOn').checked=location.protocol==='file:';$('favOn').onchange=refreshFav;
+showStats();drawFavs();
+// 처음 온 사람은 튜토리얼부터. 도구에서 문제를 넘겨받았으면 그 문제부터
+let tutSeen=false;try{tutSeen=!!localStorage.getItem('bs_tut');}catch(e){}
+const first=linked();
+newPuzzle(first||(tutSeen?undefined:tutPuzzle(0)));
+// 순위표가 켜져 있으면: 닉네임이 있으면 바로 맞추고, 없으면 처음 한 번 묻는다
+if(LB_URL){
+  let asked=null;try{asked=localStorage.getItem('bs_nickAsk');}catch(e){}
+  if(nick||first||asked==='no')lbSync();else{askNick();lbSync();}
+}
+</script>
+<!--ARTIFACT-END-->
+</body></html>
