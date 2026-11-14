@@ -71,7 +71,14 @@ html{-webkit-text-size-adjust:100%}
 #rankBtn:active{transform:scale(.94)}
 #rankBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;flex-direction:column;gap:2px;background:#fff;color:#24292f;border:1px solid #b6bec7;border-radius:12px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:14px;line-height:1.6}
 #rankBox{min-width:230px}#rankBox>b{font-size:15px}#rankBox .rankRow i,#rankBox .rankRow em,#rankBox .rankSoon{color:#57606a}
-#fav{position:absolute;top:7px;left:107px;z-index:1;width:44px;height:44px;margin:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #b6bec7;background:#fff;color:#24292f}
+#fav{position:absolute;top:7px;left:157px;z-index:1;width:44px;height:44px;margin:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #b6bec7;background:#fff;color:#24292f}
+#lvBtn{position:absolute;top:7px;left:107px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700;background:#8a929c}
+#lvBtn:active{transform:scale(.94)}
+#lvBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;gap:6px;background:#fff;border:1px solid #b6bec7;border-radius:12px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+#lvBox button{margin:0;min-width:56px;height:44px;border-radius:9px;border:3px solid transparent;color:#fff;font-size:18px;font-weight:700}
+#lvBox button[aria-pressed="true"]{border-color:#24292f}
+#lvBox button[data-lv="0"]{background:#2f9e63}#lvBox button[data-lv="1"]{background:#d99a1c}#lvBox button[data-lv="2"]{background:#d6453d}
+@media (max-width:719px){#lvBtn{top:4px;left:84px;height:36px;min-width:36px;padding:0 9px;font-size:16px}#lvBox{top:44px;left:4px}}
 #fav:active{transform:scale(.94)}#fav.on{color:#e5383b}#fav.on svg{fill:currentColor}
 #favBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;gap:6px;align-items:center;background:#fff;border:1px solid #b6bec7;border-radius:12px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 #favBox button{margin:0;min-width:52px;height:42px;border-radius:9px;border:3px solid transparent;color:#fff;font-size:17px;font-weight:700}
@@ -79,8 +86,8 @@ html{-webkit-text-size-adjust:100%}
 #favBox{flex-wrap:wrap;max-width:calc(100% - 14px);box-sizing:border-box}
 #favBox button[aria-pressed="true"]{border-color:#24292f}
 #favBox #unfav{background:#fff;color:#24292f;border:1px solid #b6bec7;font-size:13px;font-weight:400;padding:0 10px}
-#favLv{position:absolute;top:7px;left:157px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700}
-@media (max-width:719px){#favLv{top:4px;left:124px;height:36px;min-width:36px;padding:0 9px;font-size:16px}#fav{top:4px;left:84px;width:36px;height:36px}#fav svg,#rankBtn svg{width:22px;height:22px}#rankBtn{top:4px;left:44px;width:36px;height:36px}#rankBox{top:44px;left:4px}#favBox{top:44px;left:4px}}
+#favLv{position:absolute;top:7px;left:207px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700}
+@media (max-width:719px){#favLv{top:4px;left:164px;height:36px;min-width:36px;padding:0 9px;font-size:16px}#fav{top:4px;left:124px;width:36px;height:36px}#fav svg,#rankBtn svg{width:22px;height:22px}#rankBtn{top:4px;left:44px;width:36px;height:36px}#rankBox{top:44px;left:4px}#favBox{top:44px;left:4px}}
 @media (max-width:719px){#bar{top:4px;right:4px}#optBtn{top:4px;left:4px}#bar button,#optBtn{width:36px;height:36px}#bar svg,#optBtn svg{width:22px;height:22px}}
 #pick{margin:0}#tools{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
 #pick #tintBtn{all:revert;font-size:14px;padding:6px 10px;margin:2px;cursor:pointer} /* 옆의 버튼 설명과 같은 모양 */
@@ -128,6 +135,8 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <button id="optBtn" aria-label="옵션" title="옵션"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.4"/><circle cx="9" cy="12" r="2.4"/><circle cx="17" cy="18" r="2.4"/></svg></button>
   <button id="rankBtn" aria-label="순위" title="순위" aria-expanded="false"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 5 18h14l1.5-9.5-5 4L12 6l-3.5 6.5z"/><path d="M5 21h14"/></svg></button>
   <div id="rankBox" hidden></div>
+  <button id="lvBtn" aria-label="난이도" title="난이도" aria-expanded="false"></button>
+  <div id="lvBox" hidden><button data-lv="0">하</button><button data-lv="1">중</button><button data-lv="2">상</button></div>
   <button id="fav" aria-label="문제 저장" title="문제 저장" aria-expanded="false"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg></button>
   <button id="favLv" hidden title="저장한 난이도"></button>
   <div id="favBox" hidden><button id="lv0">하</button><button id="lv1">중하</button><button id="lv2">중</button><button id="lv3">중상</button><button id="lv4">상</button><button id="lv5">최상</button><button id="unfav" hidden>저장 취소</button></div>
@@ -162,11 +171,12 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <p>아래 블럭을 끌어서 판 쪽으로 가져가면 가까운 테두리에서 조준됩니다. 놓으면 발사.<br>
   판 위의 블럭을 누르면 빠집니다. PC에서는 우클릭으로도 뺍니다. 다른 블럭이 기대고 있으면 빠지지 않고, 기대고 있는 블럭이 반짝입니다.<br>
   회전: 폰에서는 아래 블럭을 톡 누르기. PC에서는 블럭 우클릭이나 R 키.</p>
-  <p><button id="devBtn" aria-expanded="false" aria-controls="dev">개발자 도구</button><button id="favsBtn" aria-expanded="false" aria-controls="favs">즐겨찾기</button></p>
+  <p><button id="devBtn" aria-expanded="false" aria-controls="dev">개발자 도구</button><button id="favsBtn" hidden aria-expanded="false" aria-controls="favs">즐겨찾기</button></p>
   <div id="favs" hidden><div id="favsList"></div></div>
   <fieldset id="dev" hidden>
     고정 칸 (최대) <select id="seeds"></select><br>
     <label><input type="checkbox" id="oh"> 판 밖으로 삐져나오기 허용</label><br>
+    <span id="cellAimRow"><label><input type="checkbox" id="cellAim"> 판 안의 칸을 가리키면 그 칸으로 조준 (실험)</label><br></span>
     <label><input type="checkbox" id="ord" checked> 순서가 중요한 문제만</label><br>
     <label><input type="checkbox" id="autoNext" checked> 완성하면 자동으로 다음 문제</label><br>
     <span id="favOnRow"><label><input type="checkbox" id="favOn"> 하트를 난이도 분류용으로 쓰기 (끄면 즐겨찾기)</label><br></span>
@@ -630,16 +640,33 @@ let aimSide=null; // 끄는 동안 조준하고 있는 변
 function aimAt(p){
   const shape=inv[sel].shape,mx=Math.floor(p.x/S)-OFF,my=Math.floor((p.y-TOP)/S)-OFF;
   const o={top:-my,bottom:my-(G-1),left:-mx,right:mx-(G-1)};
+  if($('cellAim').checked&&mx>=0&&mx<G&&my>=0&&my<G){const c=cellShot(shape,mx,my,o);if(c){aimSide=c.side;return shotView(shape,c.side,c.off);}}
   const best=Object.keys(o).reduce((a,b)=>o[b]>o[a]?b:a);
   if(!aimSide||o[best]>o[aimSide])aimSide=best; // 두 변이 똑같이 가까우면 지금까지 조준하던 방향을 유지한다
-  const side=aimSide,[dx,dy]=DIRS[side],vert=dx===0;
+  const side=aimSide,vert=DIRS[side][0]===0;
   const w=1+Math.max(...shape.map(q=>q[0])),h=1+Math.max(...shape.map(q=>q[1]));
   const [lo,hi]=laneRange(shape,side,overhang());
   const off=Math.max(lo,Math.min(hi,(vert?mx:my)-Math.floor(((vert?w:h)-1)/2)));
-  // 시작 위치: PC는 테두리에서 한 칸 띄우고, 폰은 테두리에 붙인다
-  const g=narrow()?0:1;
+  return shotView(shape,side,off);
+}
+// 한 발사를 화면에 보여 줄 값: 테두리 밖의 시작 자리와 멈추는 자리
+function shotView(shape,side,off){
+  const [dx,dy]=DIRS[side],vert=dx===0,w=1+Math.max(...shape.map(q=>q[0])),h=1+Math.max(...shape.map(q=>q[1]));
+  const g=narrow()?0:1; // 시작 위치: PC는 테두리에서 한 칸 띄우고, 폰은 테두리에 붙인다
   const start=shape.map(([sx,sy])=>vert?[sx+off,dy>0?sy-h-g:sy+G+g]:[dx>0?sx-w-g:sx+G+g,sy+off]);
   return {side,dx,dy,off,start,land:shoot(shape,side,off,occ,overhang())};
+}
+// 칸 조준: (mx,my) 칸에 블럭이 멈추는 발사를 고른다. 여럿이면 손가락이 블럭 가운데에 오는 줄, 그다음 가까운 테두리, 그다음 조준하던 방향
+function cellShot(shape,mx,my,o){
+  const w=1+Math.max(...shape.map(q=>q[0])),h=1+Math.max(...shape.map(q=>q[1]));let best=null;
+  for(const side of Object.keys(DIRS)){
+    const vert=DIRS[side][0]===0,[lo,hi]=laneRange(shape,side,overhang()),mid=(vert?mx:my)-Math.floor(((vert?w:h)-1)/2);
+    for(let off=lo;off<=hi;off++){
+      const land=shoot(shape,side,off,occ,overhang());if(!land||!land.some(c=>c[0]===mx&&c[1]===my))continue;
+      const sc=Math.abs(off-mid)*4-o[side]-(side===aimSide?0.5:0);if(!best||sc<best.sc)best={side,off,sc};
+    }
+  }
+  return best;
 }
 function slotRect(i){return {x:(W-PER_ROW*SLOT_W)/2+(i%PER_ROW)*SLOT_W,y:boardH+8+Math.floor(i/PER_ROW)*SLOT_H};}
 function pos(e){const r=cv.getBoundingClientRect(),k=cv.width/r.width;return {x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k};} // 화면에 맞게 줄어든 캔버스 보정
@@ -703,7 +730,8 @@ function refreshFav(){
   const list=loadSaved(),f=list.find(v=>v.id===puzzleId(puzzle)),lv=f?(f.top?5:f.mh?3:f.ml?1:[0,2,4][f.level]):-1; // 0 하, 1 중하, 2 중, 3 중상, 4 상, 5 최상
   const sort=$('favOn').checked; // 분류용인가
   $('fav').classList.toggle('on',sort?lv>=0:loadFavs().some(v=>v.id===puzzleId(puzzle)));$('unfav').hidden=lv<0;
-  $('fav').hidden=puzzle.tut!==undefined;if($('fav').hidden||!sort)$('favBox').hidden=true;
+  $('fav').hidden=puzzle.tut!==undefined||!sort;if($('fav').hidden)$('favBox').hidden=true; // 하트는 난이도 분류용일 때만 보인다
+  $('lvBtn').hidden=puzzle.tut!==undefined;if($('lvBtn').hidden)$('lvBox').hidden=true;
   $('favLv').hidden=lv<0||$('fav').hidden||!sort;if(lv>=0){$('favLv').textContent=['하','중하','중','중상','상','최상'][lv];$('favLv').style.background=['#2f9e63','#8fae2a','#d99a1c','#e8730c','#d6453d','#8b1e3f'][lv];}
   [0,1,2,3,4,5].forEach(i=>$('lv'+i).setAttribute('aria-pressed',lv===i));
   $('favCount').textContent=list.length;
@@ -1065,9 +1093,15 @@ function scoreNote(){ // 개발자 도구에 지금 문제의 점수를 적는�
 }
 function setLevel(lv){
   level=lv;try{localStorage.setItem('bs_level',lv===null?'x':lv);}catch(e){}
-  document.querySelectorAll('#levels button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===lv));
+  document.querySelectorAll('#levels button,#lvBox button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===lv));
+  const q=$('lvBtn');q.textContent=lv===null?'난이도':['하','중','상'][lv];q.style.background=lv===null?'':['#2f9e63','#d99a1c','#d6453d'][lv]; // 머리띠의 난이도 버튼
 }
 $('levels').onclick=e=>{const b=e.target.closest('button');if(!b)return;setLevel(+b.dataset.lv);newPuzzle();};
+// 머리띠의 난이도 버튼: 누르면 하, 중, 상이 뜨고, 고르면 그 난이도의 새 문제
+const lvShut=()=>{$('lvBox').hidden=true;$('lvBtn').setAttribute('aria-expanded',false);};
+$('lvBtn').onclick=()=>{if(!$('lvBox').hidden){lvShut();return;}$('lvBox').hidden=false;$('lvBtn').setAttribute('aria-expanded',true);};
+$('lvBox').onclick=e=>{const b=e.target.closest('button');if(!b)return;lvShut();setLevel(+b.dataset.lv);newPuzzle();};
+document.addEventListener('pointerdown',e=>{if(!$('lvBox').hidden&&!e.target.closest('#lvBox,#lvBtn'))lvShut();}); // 바깥을 누르면 닫힌다
 // 문제 설정이나 생성 옵션을 직접 바꾸면 난이도 선택을 풀고 그 설정대로 낸다. (이 처리가 각 칸의 처리보다 먼저 돈다)
 document.addEventListener('change',e=>{if(['kind','size','n','seeds','oh','ord'].includes(e.target.id))setLevel(null);},true);
 setLevel(level);
@@ -1100,20 +1134,20 @@ let tutLoop=false;
 function tutTick(){if(!puzzle||puzzle.tut===undefined){tutLoop=false;return;}if(!won&&!drag&&!shake)draw();requestAnimationFrame(tutTick);}
 function tutDone(){try{localStorage.setItem('bs_tut','1');}catch(e){}}
 function tutNext(){const n=puzzle.tut+1;if(n<TUT.length)newPuzzle(tutPuzzle(n));else{tutDone();newPuzzle();openGuide();}} // 튜토리얼을 마치면 버튼 설명을 한 번 보여 준다
-const GUIDE=[['optBtn','옵션','난이도와 문제 설정으로 갑니다.'],['rankBtn','순위','내 점수와 순위를 봅니다.'],['fav','즐겨찾기','좋아하는 문제를 담습니다.'],['undo','되돌리기','한 수를 물립니다.'],['reset','다시하기','처음부터 다시 풉니다.']];
+const GUIDE=[['optBtn','옵션','난이도와 문제 설정으로 갑니다.'],['rankBtn','순위','내 점수와 순위를 봅니다.'],['lvBtn','난이도','난이도를 고릅니다.'],['undo','되돌리기','한 수를 물립니다.'],['reset','다시하기','처음부터 다시 풉니다.']];
 function showGuide(){
   const o=$('guide'),tags=[];o.innerHTML='';let rows='',low=0,n=0;
   GUIDE.forEach(([id,name,desc])=>{
     const el=$(id);if(el.hidden)return;n++;
     const r=el.getBoundingClientRect(),ring=document.createElement('div');ring.className='gRing'; // 버튼을 그 자리에 밝게 다시 그린다
     ring.style.cssText='left:'+(r.left-3)+'px;top:'+(r.top-3)+'px;width:'+(r.width+6)+'px;height:'+(r.height+6)+'px';
-    ring.innerHTML=el.innerHTML;o.appendChild(ring);low=Math.max(low,r.bottom);
+    ring.innerHTML=el.innerHTML;if(id==='lvBtn')ring.style.cssText+=';background:'+getComputedStyle(el).backgroundColor+';color:#fff;font-weight:700;font-size:18px';o.appendChild(ring);low=Math.max(low,r.bottom);
     const tag=document.createElement('span');tag.className='gNum';tag.textContent=n;tag.style.cssText='left:'+(r.right-10)+'px;top:'+(r.bottom-10)+'px';tags.push(tag);
     rows+='<li><b>'+n+'</b><span><strong>'+name+'</strong> '+desc+'</span></li>';
   });
   tags.forEach(t=>o.appendChild(t));
   const box=document.createElement('div');box.className='gBox';box.style.top=(low+30)+'px';
-  box.innerHTML='<ol>'+rows+'</ol><p>'+(narrow()?'난이도는 화면을 아래로 내리면 고를 수 있습니다.':'난이도는 오른쪽에서 고릅니다.')+'</p><p class="gTap">화면을 누르면 닫힙니다.</p>';
+  box.innerHTML='<ol>'+rows+'</ol><p class="gTap">화면을 누르면 닫힙니다.</p>';
   o.appendChild(box);o.hidden=false;
 }
 function openGuide(){$('game').scrollIntoView({block:'start'});setTimeout(showGuide,80);} // 버튼이 화면에 들어온 뒤에 자리를 잰다
@@ -1149,7 +1183,7 @@ function drawGuide(){ // 다음에 할 일을 손짓으로 보여 준다: 돌려
   x.restore();
 }
 // 하트는 컴퓨터에서 파일로 열었을 때만 처음부터 켜 둔다 (링크로 받은 사람에게는 꺼져 있다)
-$('favOnRow').hidden=!!LB_URL;$('favOn').checked=location.protocol==='file:'&&!LB_URL;$('favOn').onchange=refreshFav;
+$('favOnRow').hidden=!!LB_URL;$('favOn').checked=location.protocol==='file:'&&!LB_URL;$('favOn').onchange=refreshFav;$('cellAim').checked=!LB_URL;$('cellAimRow').hidden=!!LB_URL; // 칸 조준은 실험이라 배포본에서는 꺼 둔다
 showStats();drawFavs();
 // 처음 온 사람은 튜토리얼부터. 도구에서 문제를 넘겨받았으면 그 문제부터
 let tutSeen=false;try{tutSeen=!!localStorage.getItem('bs_tut');}catch(e){}
