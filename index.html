@@ -176,8 +176,8 @@ fieldset{margin-top:10px;border:1px solid var(--line)}
   <fieldset id="dev" hidden>
     고정 칸 (최대) <select id="seeds"></select><br>
     <label><input type="checkbox" id="oh"> 판 밖으로 삐져나오기 허용</label><br>
-    <span id="liftRow"><label>폰에서 블럭을 손가락 위로 띄우기 (실험) <select id="liftN"><option value="0">안 띄움</option><option value="1">1칸</option><option value="2">2칸</option></select></label><br></span>
-    <span id="cellAimRow"><label><input type="checkbox" id="cellAim"> 판 안의 칸을 가리키면 그 칸으로 조준 (실험)</label><br></span>
+    <span id="liftRow"><label>폰에서 블럭을 손가락 위로 띄우기 <select id="liftN"><option value="0">안 띄움</option><option value="1">1칸</option><option value="2">2칸</option></select></label><br></span>
+    <span id="cellAimRow"><label><input type="checkbox" id="cellAim"> 판 안의 칸을 가리키면 그 칸으로 조준</label><br></span>
     <label><input type="checkbox" id="ord" checked> 순서가 중요한 문제만</label><br>
     <label><input type="checkbox" id="autoNext" checked> 완성하면 자동으로 다음 문제</label><br>
     <span id="favOnRow"><label><input type="checkbox" id="favOn"> 하트를 난이도 분류용으로 쓰기 (끄면 즐겨찾기)</label><br></span>
@@ -671,7 +671,7 @@ function cellShot(shape,mx,my,o){
 }
 function slotRect(i){return {x:(W-PER_ROW*SLOT_W)/2+(i%PER_ROW)*SLOT_W,y:boardH+8+Math.floor(i/PER_ROW)*SLOT_H};}
 function pos(e){const r=cv.getBoundingClientRect(),k=cv.width/r.width;return {x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k};} // 화면에 맞게 줄어든 캔버스 보정
-// 띄우기 (실험): 터치로 끄는 동안 조준점을 손가락보다 위에 둔다. 받침대에서 톡 누르는 회전과 헷갈리지 않게, 손가락이 조금 움직인 뒤부터 띄운다
+// 띄우기: 터치로 끄는 동안 조준점을 손가락보다 위에 둔다. 받침대에서 톡 누르는 회전과 헷갈리지 않게, 손가락이 조금 움직인 뒤부터 띄운다
 function lifted(e,p){
   const n=+$('liftN').value;if(!n||e.pointerType==='mouse')return p;
   if(tapStart&&Math.hypot(p.x-tapStart.x,p.y-tapStart.y)<20)return p;
@@ -1190,7 +1190,7 @@ function drawGuide(){ // 다음에 할 일을 손짓으로 보여 준다: 돌려
   x.restore();
 }
 // 하트는 컴퓨터에서 파일로 열었을 때만 처음부터 켜 둔다 (링크로 받은 사람에게는 꺼져 있다)
-$('favOnRow').hidden=!!LB_URL;$('favOn').checked=location.protocol==='file:'&&!LB_URL;$('favOn').onchange=refreshFav;$('cellAim').checked=!LB_URL;$('cellAimRow').hidden=!!LB_URL;$('liftN').value=LB_URL?'0':'1';$('liftRow').hidden=!!LB_URL; // 칸 조준은 실험이라 배포본에서는 꺼 둔다
+$('favOnRow').hidden=!!LB_URL;$('favOn').checked=location.protocol==='file:'&&!LB_URL;$('favOn').onchange=refreshFav;$('cellAim').checked=true;$('liftN').value='1'; // 칸 조준과 띄우기는 기본으로 켠다
 showStats();drawFavs();
 // 처음 온 사람은 튜토리얼부터. 도구에서 문제를 넘겨받았으면 그 문제부터
 let tutSeen=false;try{tutSeen=!!localStorage.getItem('bs_tut');}catch(e){}
