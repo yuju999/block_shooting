@@ -72,13 +72,13 @@ html{-webkit-text-size-adjust:100%}
 #rankBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;flex-direction:column;gap:2px;background:#fff;color:#24292f;border:1px solid #b6bec7;border-radius:12px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:14px;line-height:1.6}
 #rankBox{min-width:230px}#rankBox>b{font-size:15px}#rankBox .rankRow i,#rankBox .rankRow em,#rankBox .rankSoon{color:#57606a}
 #fav{position:absolute;top:7px;left:157px;z-index:1;width:44px;height:44px;margin:0;padding:0;display:grid;place-items:center;border-radius:12px;border:1px solid #b6bec7;background:#fff;color:#24292f}
-#lvBtn{position:absolute;top:7px;left:107px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700;background:#8a929c}
+#lvBtn{position:absolute;top:7px;left:107px;z-index:1;height:44px;min-width:44px;margin:0;padding:0 12px;border:0;border-radius:12px;color:#fff;font-size:16px;font-weight:700;background:#8a929c}
 #lvBtn:active{transform:scale(.94)}
 #lvBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;gap:6px;background:#fff;border:1px solid #b6bec7;border-radius:12px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 #lvBox button{margin:0;min-width:56px;height:44px;border-radius:9px;border:3px solid transparent;color:#fff;font-size:18px;font-weight:700}
 #lvBox button[aria-pressed="true"]{border-color:#24292f}
 #lvBox button[data-lv="0"]{background:#2f9e63}#lvBox button[data-lv="1"]{background:#d99a1c}#lvBox button[data-lv="2"]{background:#d6453d}
-@media (max-width:719px){#lvBtn{top:4px;left:84px;height:36px;min-width:36px;padding:0 9px;font-size:16px}#lvBox{top:44px;left:4px}}
+@media (max-width:719px){#lvBtn{top:4px;left:84px;height:36px;min-width:36px;padding:0 9px;font-size:15px}#lvBox{top:44px;left:4px}}
 #fav:active{transform:scale(.94)}#fav.on{color:#e5383b}#fav.on svg{fill:currentColor}
 #favBox{position:absolute;top:57px;left:7px;z-index:2;display:flex;gap:6px;align-items:center;background:#fff;border:1px solid #b6bec7;border-radius:12px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 #favBox button{margin:0;min-width:52px;height:42px;border-radius:9px;border:3px solid transparent;color:#fff;font-size:17px;font-weight:700}
@@ -1094,7 +1094,7 @@ function scoreNote(){ // 개발자 도구에 지금 문제의 점수를 적는�
 function setLevel(lv){
   level=lv;try{localStorage.setItem('bs_level',lv===null?'x':lv);}catch(e){}
   document.querySelectorAll('#levels button,#lvBox button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.lv===lv));
-  const q=$('lvBtn');q.textContent=lv===null?'난이도':['하','중','상'][lv];q.style.background=lv===null?'':['#2f9e63','#d99a1c','#d6453d'][lv]; // 머리띠의 난이도 버튼
+  const q=$('lvBtn');q.textContent='난이도';q.style.background=lv===null?'':['#2f9e63','#d99a1c','#d6453d'][lv]; // 머리띠의 난이도 버튼
 }
 $('levels').onclick=e=>{const b=e.target.closest('button');if(!b)return;setLevel(+b.dataset.lv);newPuzzle();};
 // 머리띠의 난이도 버튼: 누르면 하, 중, 상이 뜨고, 고르면 그 난이도의 새 문제
@@ -1141,7 +1141,7 @@ function showGuide(){
     const el=$(id);if(el.hidden)return;n++;
     const r=el.getBoundingClientRect(),ring=document.createElement('div');ring.className='gRing'; // 버튼을 그 자리에 밝게 다시 그린다
     ring.style.cssText='left:'+(r.left-3)+'px;top:'+(r.top-3)+'px;width:'+(r.width+6)+'px;height:'+(r.height+6)+'px';
-    ring.innerHTML=el.innerHTML;if(id==='lvBtn')ring.style.cssText+=';background:'+getComputedStyle(el).backgroundColor+';color:#fff;font-weight:700;font-size:18px';o.appendChild(ring);low=Math.max(low,r.bottom);
+    ring.innerHTML=el.innerHTML;if(id==='lvBtn')ring.style.cssText+=';background:'+getComputedStyle(el).backgroundColor+';color:#fff;font-weight:700;font-size:'+getComputedStyle(el).fontSize;o.appendChild(ring);low=Math.max(low,r.bottom);
     const tag=document.createElement('span');tag.className='gNum';tag.textContent=n;tag.style.cssText='left:'+(r.right-10)+'px;top:'+(r.bottom-10)+'px';tags.push(tag);
     rows+='<li><b>'+n+'</b><span><strong>'+name+'</strong> '+desc+'</span></li>';
   });
