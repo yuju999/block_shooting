@@ -912,12 +912,15 @@ function rankHtml(v,rate){
   let h;
   if(!lbData)h=(nick?mine:'')+'<div class="rankSoon">'+(lbState||'순위표를 불러오는 중입니다')+'</div>';
   else{
-    const rows=lbData.list.slice(0,5),same=r=>!!nick&&r.nick.toLowerCase()===nick.toLowerCase();
+    // 닉네임 없이 하는 사람은 순위표에 올리지 않는다 (관리 화면에서만 보인다). 등수는 이름 있는 사람끼리 다시 매긴다
+    const named=lbData.list.filter(r=>!anonName(r.nick)).map((r,i)=>({...r,rank:i+1}));
+    const rows=named.slice(0,5),same=r=>!!nick&&r.nick.toLowerCase()===nick.toLowerCase();
     h=rows.length?rows.map(r=>rankRow(r,same(r))).join(''):'<div class="rankSoon">아직 아무도 없습니다</div>';
-    if(lbData.me&&lbData.me.rank>rows.length)h+=rankRow(lbData.me,true); // 내가 5등 밖이면 맨 아래에 내 줄
+    const myRow=isAnon()?null:(named.find(same)||lbData.me); // 내 등수: 받은 목록 안에 있으면 그 등수, 없으면 서버가 알려 준 등수
+    if(myRow&&!rows.some(same))h+=rankRow(myRow,true); // 내가 5등 밖이면 맨 아래에 내 줄
     if(lbState)h+='<div class="rankSoon">'+lbState+'</div>';
   }
-  if(!nick)h+=mine; // 닉네임이 없으면 순위에 오르지 않은 내 점수를 따로 보여 준다
+  if(!nick||isAnon())h+=mine; // 닉네임이 없으면(익명 포함) 순위에 오르지 않은 내 점수를 따로 보여 준다
   return h;
 }
 async function lbSync(){ // 내 기록을 올리고 순위표를 받아 온다. 겹쳐 불리면 끝난 뒤 한 번 더 돈다
@@ -985,7 +988,7 @@ $('nickNew').onclick=async()=>{ // 다른 사람: 뒤에 숫자를 붙인 새 �
   $('nickYes').disabled=$('nickNew').disabled=false;
 };
 $('nickIn').onkeydown=e=>{if(e.key==='Enter')$('nickOk').click();};
-const isAnon=()=>!!nick&&/^anonymous\d{3,4}$/.test(nick);
+const anonName=n=>/^anonymous\d{3,4}$/.test(n),isAnon=()=>!!nick&&anonName(nick); // anonName: 닉네임 없이 하는 사람에게 붙는 이름인가
 async function anonNick(){ // 닉네임 없이 하는 사람: anonymous + 숫자 세 자리. 겹치면 다시 뽑고, 다섯 번 겹치면 네 자리로
   for(let i=0;i<12;i++){
     const digits=i<5?3:4,num=String(Math.floor(Math.random()*Math.pow(10,digits))).padStart(digits,'0'),name='anonymous'+num;
